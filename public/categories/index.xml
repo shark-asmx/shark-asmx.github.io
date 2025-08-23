@@ -6,8 +6,15 @@
     <description>Recent content in Categories on shark.exe</description>
     <generator>Hugo -- 0.147.8</generator>
     <language>en</language>
-    <lastBuildDate>Fri, 08 Mar 2024 07:51:58 +0000</lastBuildDate>
+    <lastBuildDate>Sat, 11 Jan 2025 17:00:50 +0000</lastBuildDate>
     <atom:link href="http://localhost:1313/categories/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Debugging</title>
+      <link>http://localhost:1313/categories/debugging/</link>
+      <pubDate>Sat, 11 Jan 2025 17:00:50 +0000</pubDate>
+      <guid>http://localhost:1313/categories/debugging/</guid>
+      <description></description>
+    </item>
     <item>
       <title>Forensics</title>
       <link>http://localhost:1313/categories/forensics/</link>

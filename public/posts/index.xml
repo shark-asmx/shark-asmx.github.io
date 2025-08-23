@@ -65,6 +65,13 @@
       <description>Hands on parsing PE files with WinDbg and explore their structures for debugging and reverse engineering.</description>
     </item>
     <item>
+      <title>Decoding PE Files A Step-by-Step Guide with WinDbg - Part 1</title>
+      <link>http://localhost:1313/posts/pe-parse-windbg/pe-parse-windbg/</link>
+      <pubDate>Sat, 11 Jan 2025 17:00:50 +0000</pubDate>
+      <guid>http://localhost:1313/posts/pe-parse-windbg/pe-parse-windbg/</guid>
+      <description>Hands-on parsing PE files with WinDbg and exploring their structures for debugging and reverse engineering.</description>
+    </item>
+    <item>
       <title>PE Parsing: A Step-by-Step Guide with WinDbg - Part 1</title>
       <link>http://localhost:1313/posts/pe-parse-windbg/</link>
       <pubDate>Sat, 11 Jan 2025 17:00:50 +0530</pubDate>
