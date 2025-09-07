@@ -1,6 +1,6 @@
-baseURL = "https://5h4rrk.github.io/"
+baseURL = "https://shark-asmx.github.io/"
 languageCode = "en-us"
-title = "shark.exe"
+title = "shark-asmx"
 theme = "hugo-PaperMod-Catpuccin"
 enableInlineShortcodes = true
 enableRobotsTXT = true
@@ -38,7 +38,7 @@ weight = 10
 
     [languages.en.params.profileMode]
     enabled = true
-    title = "5h4rrk"
+    title = "shark-asmx"
     imageUrl = "https://avatars.githubusercontent.com/u/89577007"
     imageTitle = "Profile image"
     imageWidth = 130
@@ -51,8 +51,8 @@ weight = 10
 
 [params]
 env = "production"
-description = "5h4rrk's blog"
-author = "5h4rrk"
+description = "shark-asmx's blog"
+author = "shark-asmx"
 defaultTheme = "auto"
 ShowShareButtons = true
 ShowReadingTime = true
@@ -74,7 +74,7 @@ fullWidthTheme = false
 
   [params.profileMode]
   enabled = false
-  title = "5h4rrk"
+  title = "shark-asmx"
   imageUrl = "#"
   imageTitle = "my image"
 
@@ -83,7 +83,7 @@ fullWidthTheme = false
     url = "tags"
 
   [params.homeInfoParams]
-  Title = "Hii, I'm 5h4rrk."
+  Title = "Hii, I'm shark-asmx."
   Content = [
   "I'm Sabhya Raj Mehta currently pursuing B.Tech CSE in Amrita Vishwa Vidhyapeetham. I'm DFIR enthusiast, playing CTFs with teambi0s & DFIR category lead @ bi0s."
 ]
@@ -91,12 +91,12 @@ fullWidthTheme = false
   [[params.socialIcons]]
   name = "Github"
   title = "Join me on Github"
-  url = "https://github.com/5h4rrk"
+  url = "https://github.com/shark-asmx"
 
   [[params.socialIcons]]
   name = "X"
   title = "Join me on Twitter"
-  url = "https://twitter.com/5h4rrk"
+  url = "https://twitter.com/shark_asmx"
 
   [[params.socialIcons]]
   name = "linkedin"
