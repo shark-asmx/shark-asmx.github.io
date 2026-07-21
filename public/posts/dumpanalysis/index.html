@@ -1,244 +1,49 @@
 <!DOCTYPE html>
-<html lang="en" dir="auto">
-
-<head><script src="/livereload.js?mindelay=10&amp;v=2&amp;port=1313&amp;path=livereload" data-no-instant defer></script><meta charset="utf-8">
-<meta http-equiv="X-UA-Compatible" content="IE=edge">
-<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<meta name="robots" content="index, follow">
-<title>Kernel Memory Dump Analysis : Introduction | shark.exe</title>
-<meta name="keywords" content="Digital Forensics, Kernel Dump, Windows Troubleshooting, Dump Analysis, Memory Forensics, WinDbg, Windows">
-<meta name="description" content="An introduction to analyzing kernel memory dumps using WinDbg.">
-<meta name="author" content="5h4rrk">
-<link rel="canonical" href="http://localhost:1313/posts/dumpanalysis/">
-<link crossorigin="anonymous" href="/assets/css/stylesheet.180f19e094a50e5c790e9ddd948e1a18e5dc254c922bb069dceb5480237cf06c.css" integrity="sha256-GA8Z4JSlDlx5Dp3dlI4aGOXcJUySK7Bp3OtUgCN88Gw=" rel="preload stylesheet" as="style">
-<link rel="icon" href="http://localhost:1313/favicon.ico">
-<link rel="icon" type="image/png" sizes="16x16" href="http://localhost:1313/favicon-16x16.png">
-<link rel="icon" type="image/png" sizes="32x32" href="http://localhost:1313/favicon-32x32.png">
-<link rel="apple-touch-icon" href="http://localhost:1313/apple-touch-icon.png">
-<link rel="mask-icon" href="http://localhost:1313/safari-pinned-tab.svg">
-<meta name="theme-color" content="#2e2e33">
-<meta name="msapplication-TileColor" content="#2e2e33">
-<link rel="alternate" hreflang="en" href="http://localhost:1313/posts/dumpanalysis/">
-<noscript>
-    <style>
-        #theme-toggle,
-        .top-link {
-            display: none;
-        }
-
-    </style>
-    <style>
-        @media (prefers-color-scheme: dark) {
-            :root {
-                --theme: rgb(29, 30, 32);
-                --entry: rgb(46, 46, 51);
-                --primary: rgb(218, 218, 219);
-                --secondary: rgb(155, 156, 157);
-                --tertiary: rgb(65, 66, 68);
-                --content: rgb(196, 196, 197);
-                --code-block-bg: rgb(46, 46, 51);
-                --code-bg: rgb(55, 56, 62);
-                --border: rgb(51, 51, 51);
-            }
-
-            .list {
-                background: var(--theme);
-            }
-
-            .list:not(.dark)::-webkit-scrollbar-track {
-                background: 0 0;
-            }
-
-            .list:not(.dark)::-webkit-scrollbar-thumb {
-                border-color: var(--theme);
-            }
-        }
-
-    </style>
-</noscript><meta property="og:url" content="http://localhost:1313/posts/dumpanalysis/">
-  <meta property="og:site_name" content="shark.exe">
-  <meta property="og:title" content="Kernel Memory Dump Analysis : Introduction">
-  <meta property="og:description" content="An introduction to analyzing kernel memory dumps using WinDbg.">
-  <meta property="og:locale" content="en">
-  <meta property="og:type" content="article">
-    <meta property="article:section" content="posts">
-    <meta property="article:published_time" content="2025-01-30T18:28:18+05:30">
-    <meta property="article:modified_time" content="2025-01-30T18:28:18+05:30">
-    <meta property="article:tag" content="Digital Forensics">
-    <meta property="article:tag" content="Kernel Dump">
-    <meta property="article:tag" content="Windows Troubleshooting">
-    <meta property="article:tag" content="Dump Analysis">
-    <meta property="article:tag" content="Memory Forensics">
-    <meta property="article:tag" content="WinDbg">
-<meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="Kernel Memory Dump Analysis : Introduction">
-<meta name="twitter:description" content="An introduction to analyzing kernel memory dumps using WinDbg.">
-
-
-<script type="application/ld+json">
-{
-  "@context": "https://schema.org",
-  "@type": "BreadcrumbList",
-  "itemListElement": [
-    {
-      "@type": "ListItem",
-      "position":  1 ,
-      "name": "Posts",
-      "item": "http://localhost:1313/posts/"
-    }, 
-    {
-      "@type": "ListItem",
-      "position":  2 ,
-      "name": "Kernel Memory Dump Analysis : Introduction",
-      "item": "http://localhost:1313/posts/dumpanalysis/"
-    }
-  ]
-}
-</script>
-<script type="application/ld+json">
-{
-  "@context": "https://schema.org",
-  "@type": "BlogPosting",
-  "headline": "Kernel Memory Dump Analysis : Introduction",
-  "name": "Kernel Memory Dump Analysis : Introduction",
-  "description": "An introduction to analyzing kernel memory dumps using WinDbg.",
-  "keywords": [
-    "Digital Forensics", "Kernel Dump", "Windows Troubleshooting", "Dump Analysis", "Memory Forensics", "WinDbg", "Windows"
-  ],
-  "articleBody": "Kernel Dump A kernel dump is a snapshot of the system volatile memory (RAM) saved to the drive when the system crashes or the kernel (core part of the operating system) stops working.\nTypes of Kernel Memory Dumps Complete Memory Dump: Contains entire contents of system physical memory at the time of crash. It would be equal to your SYSTEM RAM size.\nKernel Dump: Contains only kernel mode memory associated with operating system’s kernel and its modules. It ignores memory (allocated or unallocated) used by user mode.\nSmall Memory Dump: Exactly 64KB in size. It includes BugCheck and its parametes, PRCB, EPROCESS and ETHREAD for the process that crashed and list of loaded modules.\nAutomatic Memory Dump: Similar to Kernel Dump, the file contents would be same as Kernel Dump. The key difference between them is how Windows manages the system pagefile size. It automatically adjust size. Initially, Windows Page size is set smaller than RAM to save space. If computer crashes and the pagefile is too large, then Windows will increase the pagefile size almost equal to RAM size.\nActive Memory Dump: Similar to Complete Memory Dump. The key difference is it filters out the pages that are not useful in trobuleshooting. It ignores the irrelevant pages.\nRequirements WinDbg: WinDbg is a debugger that can be used to analyze crash dumps, debug live user-mode and kernel-mode code.\nMex.dll: Extension that simplifies debugging tasks and also provides powerful text filtering capabilites.\nNote: This is not a complete memory dump. Some commands may not function as intended.\nLoading Mex.dll 0: kd\u003e .load C:\\WinDbgExt\\mex.dll Mex External 3.0.0.7172 Loaded! Memory Dump Analysis Dump Information !di: Displays dump information like Computer Name, Product, BugCheck Code and so on.\n0: kd\u003e !di Computer Name: DESKTOP-T1AH8JR Windows 10 Kernel Version 19045 MP (4 procs) Free x64 Product: WinNt, suite: TerminalServer SingleUserTS Edition build lab: 19041.1.amd64fre.vb_release.191206-1406 Kernel base = 0xfffff807`1e018000 PsLoadedModuleList = 0xfffff807`1ec422b0 Debug session time: Sat Oct 12 18:27:59.711 2024 (UTC + 5:30) System Uptime: 0 days 0:38:41.104 SystemManufacturer = VMware, Inc. SystemProductName = VMware20,1 Processor: 11th Gen Intel(R) Core(TM) i5-1135G7 @ 2.40GHz Bugcheck: 5454414D (4E4F4F4D, 534C4F53, 4E4F4F4D, 534C4F53) KernelMode Full Memory Dump Path: V:\\WinVM\\QuackQuack\\DESKTOP-T1AH8JR-20241012-125757.dmp Share Path: \\\\QUACK\\V$\\WinVM\\QuackQuack\\DESKTOP-T1AH8JR-20241012-125757.dmp Use -v for enabling verbose mode.\n0: kd\u003e !di -v Computer Name: DESKTOP-T1AH8JR Windows 10 Kernel Version 19045 MP (4 procs) Free x64 Product: WinNt, suite: TerminalServer SingleUserTS Edition build lab: 19041.1.amd64fre.vb_release.191206-1406 Kernel base = 0xfffff807`1e018000 PsLoadedModuleList = 0xfffff807`1ec422b0 Debug session time: Sat Oct 12 18:27:59.711 2024 (UTC + 5:30) System Uptime: 0 days 0:38:41.104 SystemManufacturer = VMware, Inc. SystemProductName = VMware20,1 Processor: 11th Gen Intel(R) Core(TM) i5-1135G7 @ 2.40GHz Bugcheck: 5454414D (4E4F4F4D, 534C4F53, 4E4F4F4D, 534C4F53) KernelMode Full Memory Dump Path: V:\\WinVM\\QuackQuack\\DESKTOP-T1AH8JR-20241012-125757.dmp Share Path: \\\\QUACK\\V$\\WinVM\\QuackQuack\\DESKTOP-T1AH8JR-20241012-125757.dmp Verbose mode Event Times (UTC + 5:30) ============ ========================== System Start 10/12/2024 05:49:18.607 PM Dump Start 10/12/2024 06:27:59.711 PM Stat Duration ============= ========== System Uptime 38m:41.104 File size 2,145,943,552 File date 10/12/2024 18:28:12 ExceptionAddress: fffff8072aa9136d (DumpIt+0x000000000000136d) ExceptionCode: 80000003 (Break instruction exception) ExceptionFlags: 00000001 NumberParameters: 0 Local Machine Name QUACK (QUACK\\heysa) Opening the DUMP file in Hex Editor ImHex to analyze its contents. ImHex has collection of various pattern files that could be useful for understanding file structures and patterns.\nComputer Name !cn: Displays Computer Name Alias: !name, !computername\n0: kd\u003e !cn Computer Name: DESKTOP-T1AH8JR Crash !crash: Perfoms crash dump analysis and provides details 0: kd\u003e !crash Dump Info ============================================ Computer Name: DESKTOP-T1AH8JR Windows 10 Kernel Version 19045 MP (4 procs) Free x64 Product: WinNt, suite: TerminalServer SingleUserTS Edition build lab: 19041.1.amd64fre.vb_release.191206-1406 Kernel base = 0xfffff807`1e018000 PsLoadedModuleList = 0xfffff807`1ec422b0 Debug session time: Sat Oct 12 18:27:59.711 2024 (UTC + 5:30) System Uptime: 0 days 0:38:41.104 SystemManufacturer = VMware, Inc. SystemProductName = VMware20,1 Processor: 11th Gen Intel(R) Core(TM) i5-1135G7 @ 2.40GHz Bugcheck: 5454414D (4E4F4F4D, 534C4F53, 4E4F4F4D, 534C4F53) KernelMode Full Memory Dump Path: V:\\WinVM\\QuackQuack\\DESKTOP-T1AH8JR-20241012-125757.dmp Share Path: \\\\QUACK\\V$\\WinVM\\QuackQuack\\DESKTOP-T1AH8JR-20241012-125757.dmp Bugcheck details ============================================ Bugcheck code 5454414D Arguments 00000000`4e4f4f4d 00000000`534c4f53 00000000`4e4f4f4d 00000000`534c4f53 Crashing Stack ============================================ *** Stack trace for last set context - .thread/.cxr resets it # Child-SP RetAddr Call Site 00 ffffc10f`7507ec70 ffffc509`bc08d6d0 DumpIt+0x16d7 01 ffffc10f`7507f190 00000000`00000001 0xffffc509`bc08d6d0 02 ffffc10f`7507f198 fffff807`1ed02a10 0x1 03 ffffc10f`7507f1a0 7fffc509`c25a3b80 nt!KiAbTreeArray+0xee10 04 ffffc10f`7507f1a8 00000000`ffffffff 0x7fffc509`c25a3b80 05 ffffc10f`7507f1b0 00000000`00000000 0xffffffff Where Am I To check at what proccess currently in. This will display processes name along with details such as PID, TID, TEB and Session.\nAlias: !context\n0: kd\u003e !w Session: 0 Process: ffffc509b8884040 System Thread: fffff8071ed3fa00 Idle fffff8071ed3ca00 Pid: 4 Tid: 0 Frame: 0 Teb: 0 Dbgid: 0 (Debugger thread ID in usermode / Processor ID in kernelmode) We can confirm that we are in the correct thread, as we got the same information from !crash\n0: kd\u003e !thread fffff8071ed3fa00 THREAD fffff8071ed3fa00 Cid 0000.0000 Teb: 0000000000000000 Win32Thread: 0000000000000000 RUNNING on processor 0 Not impersonating DeviceMap ffff990107e38420 Owning Process fffff8071ed3ca00 Image: Idle Attached Process ffffc509b8884040 Image: System Wait Start TickCount 8051 Ticks: 140509 (0:00:36:35.453) Context Switch Count 983471 IdealProcessor: 0 UserTime 00:00:00.000 KernelTime 00:31:12.906 Win32 Start Address nt!KiIdleLoop (0xfffff8071e418500) Stack Init fffff80720e75650 Current fffff80720e755e0 Base fffff80720e76000 Limit fffff80720e6f000 Call 0000000000000000 Priority 0 BasePriority 0 IoPriority 0 PagePriority 5 Child-SP RetAddr : Args to Child : Call Site ffffc10f`7507ec70 ffffc509`bc08d6d0 : 00000000`00000001 fffff807`1ed02a10 7fffc509`c25a3b80 00000000`ffffffff : DumpIt+0x16d7 ffffc10f`7507f190 00000000`00000001 : fffff807`1ed02a10 7fffc509`c25a3b80 00000000`ffffffff 00000000`00000000 : 0xffffc509`bc08d6d0 ffffc10f`7507f198 fffff807`1ed02a10 : 7fffc509`c25a3b80 00000000`ffffffff 00000000`00000000 ffffc509`bc08d720 : 0x1 ffffc10f`7507f1a0 7fffc509`c25a3b80 : 00000000`ffffffff 00000000`00000000 ffffc509`bc08d720 00000000`00000000 : nt!KiAbTreeArray+0xee10 ffffc10f`7507f1a8 00000000`ffffffff : 00000000`00000000 ffffc509`bc08d720 00000000`00000000 00000000`00000000 : 0x7fffc509`c25a3b80 ffffc10f`7507f1b0 00000000`00000000 : ffffc509`bc08d720 00000000`00000000 00000000`00000000 00000000`00000000 : 0xffffffff To get formatted and simplified view, use !t 0: kd\u003e !t fffff8071ed3fa00 Process AttachedProcess Thread CID UserTime KernelTime ContextSwitches Wait Reason Time State Idle (fffff8071ed3ca00) System (ffffc509b8884040) fffff8071ed3fa00 (E|K|W|R|V) 0.0 0 31m:12.906 983471 WrCalloutStack 36m:35.453 Running on processor 0 Priority: Current Base Decrement ForegroundBoost IO Page 0 0 0 0 0 5 # Child-SP Return Call Site 0 ffffc10f7507ec70 ffffc509bc08d6d0 DumpIt+0x16d7 1 ffffc10f7507f190 0000000000000001 0xffffc509bc08d6d0 2 ffffc10f7507f198 fffff8071ed02a10 0x1 3 ffffc10f7507f1a0 7fffc509c25a3b80 nt!KiAbTreeArray+0xee10 4 ffffc10f7507f1a8 00000000ffffffff 0x7fffc509c25a3b80 5 ffffc10f7507f1b0 0000000000000000 0xffffffff E (Executive) - Thread is executing in the Windows Executive layer. K (Kernel) - Thread is executing in kernel mode. W (Wait) - Thread is waiting for an event or resource. R (Ready) - Thread is ready to run but is not currently executing. V (Wait for Event Pair Low) - Thread is waiting on an lower part of event pair (used in synchronization). Mostly appears in ALPC, RPC and User to Kernel Communication. List Threads !lt: To get list of threads of a process. Alias: !listthreads\n0: kd\u003e !lt Process PID Thread Id State Time Reason ======= === ================ == ======= ========== ============== Idle 0 fffff8071ed3fa00 0 Running 36m:35.453 WrCalloutStack Idle 0 ffffb000addf2140 0 Running 38m:41.250 Executive Idle 0 ffffb000ad9f5140 0 Running 38m:41.250 Executive Idle 0 ffffb000adb78140 0 Standby 38m:41.250 Executive Thread Count: 4 How to figure State and Reason looking at _KTHREAD structure ?\nExamining the KTHREAD field, Identify the State and WaitReason fields, interpreting values to understand thread states and reasons for waiting.\n0: kd\u003e dt nt!_ETHREAD +0x000 Tcb : _KTHREAD +0x430 CreateTime : _LARGE_INTEGER ... _ETHREAD is a gigantic structure. The very first entry is TCB(Thread Control Block) which is defined as a _KTHREAD structure. 0: kd\u003e dt nt!_KTHREAD fffff8071ed3fa00 -y WaitReason +0x283 WaitReason : 0x19 '' 0: kd\u003e dt nt!_KTHREAD fffff8071ed3fa00 State +0x184 State : 0x2 '' The WaitReason value 0x19 corresponds to 25 which is WrCalloutStack.\ntypedef enum _KWAIT_REASON{ Executive = 0, FreePage = 1, PageIn = 2, PoolAllocation = 3, DelayExecution = 4, Suspended = 5, UserRequest = 6, WrExecutive = 7, WrFreePage = 8, WrPageIn = 9, WrPoolAllocation = 10, WrDelayExecution = 11, WrSuspended = 12, WrUserRequest = 13, WrEventPair = 14, WrQueue = 15, WrLpcReceive = 16, WrLpcReply = 17, WrVirtualMemory = 18, WrPageOut = 19, WrRendezvous = 20, Spare2 = 21, Spare3 = 22, Spare4 = 23, Spare5 = 24, WrCalloutStack = 25, WrKernel = 26, WrResource = 27, WrPushLock = 28, WrMutex = 29, WrQuantumEnd = 30, WrDispatchInt = 31, WrPreempted = 32, WrYieldExecution = 33, WrFastMutex = 34, WrGuardedMutex = 35, WrRundown = 36, MaximumWaitReason = 37 } KWAIT_REASON; By examining the State Value, we can determine the current state of the thread.\nState 0x2: Running\n0x00: \"Initialized\", 0x01: \"Ready\", 0x02: \"Running\", 0x03: \"Standby\", 0x04: \"Terminated\", 0x05: \"Waiting\", 0x06: \"Transition\", 0x07: \"DeferredReady\", # Windows 5.2 and higher 0x08: \"GateWait\", # Windows 5.2 SP1 and higher 0x09: \"WaitingForProcessInSwap\" # Windows 10.0 and higher Thread Lists !lt: Displays a list of threads. Use -pid to see all threads of a process.\n0: kd\u003e !lt -pid 6672 Process PID Thread Id State Time Reason =========== ==== ================ ==== ======= ========= =========== svchost.exe 1f3c ffffc509bd207080 1f38 Waiting 1m:17.609 UserRequest svchost.exe 1f3c ffffc509bd297080 1900 Waiting 1m:17.578 UserRequest svchost.exe 1f3c ffffc509b89ad080 1044 Waiting 1m:17.609 UserRequest svchost.exe 1f3c ffffc509c1b40080 d08 Waiting 1m:17.578 UserRequest svchost.exe 1f3c ffffc509bfbce040 d44 Waiting 17s.625 WrQueue svchost.exe 1f3c ffffc509c1d65040 1dcc Waiting 1m:17.546 WrQueue svchost.exe 1f3c ffffc509bf003080 1bc Waiting 14s.250 UserRequest svchost.exe 1f3c ffffc509bdb0d080 1cd8 Waiting 1m:17.578 WrQueue svchost.exe 1f3c ffffc509bdf6a040 1dc Waiting 1m:17.578 WrQueue Use -wr to filter out threads based on WaitReason\n0: kd\u003e !lt -pid 6672 -wr WrQueue Process PID Thread Id State Time Reason =========== ==== ================ ==== ======= ========= ======= svchost.exe 1f3c ffffc509bfbce040 d44 Waiting 17s.625 WrQueue svchost.exe 1f3c ffffc509c1d65040 1dcc Waiting 1m:17.546 WrQueue svchost.exe 1f3c ffffc509bdb0d080 1cd8 Waiting 1m:17.578 WrQueue svchost.exe 1f3c ffffc509bdf6a040 1dc Waiting 1m:17.578 WrQueue Thread Count: 4 Let’s inspect cmd.exe process.\n0: kd\u003e !process 0 0 cmd.exe PROCESS ffffc509bf28b080 SessionId: 1 Cid: 1164 Peb: 72ce659000 ParentCid: 1148 DirBase: 5e2bc002 ObjectTable: ffff99011473e500 HandleCount: 245. Image: cmd.exe Process !p: It displays process details 0: kd\u003e !p ffffc509bf28b080 Name Address Ses PID Parent PEB Create Time Mods Handle Thrd User Name ======= ======================== === ============= ============= ================ ========================== ==== ====== ==== ====================== cmd.exe ffffc509bf28b080 (E|K|O) 1 1164 (0n4452) 1148 (0n4424) 00000072ce659000 10/12/2024 06:17:51.083 PM 46 0 4 DESKTOP-T1AH8JR\\w0w Command Line: \"C:\\Windows\\System32\\cmd.exe\" Memory Details: VM Peak Commit Size PP Quota NPP Quota ==== ==== =========== ========= ========= 2 TB 2 TB 7.05 MB 181.53 KB 13.39 KB Show LPC Port information for process Show Threads: Unique Stacks !mex.listthreads (!lt) ffffc509bf28b080 !process ffffc509bf28b080 7 Dump PEB for more insight about the process.\n0: kd\u003e !peb 00000072ce659000 PEB at 00000072ce659000 InheritedAddressSpace: No ReadImageFileExecOptions: No BeingDebugged: No ImageBaseAddress: 00007ff7931f0000 NtGlobalFlag: 0 NtGlobalFlag2: 0 Ldr 00007ffe5ef1c4c0 Ldr.Initialized: Yes Ldr.InInitializationOrderModuleList: 000001c7641224f0 . 000001c7641c8e90 Ldr.InLoadOrderModuleList: 000001c764122660 . 000001c7641c7450 Ldr.InMemoryOrderModuleList: 000001c764122670 . 000001c7641c7460 Base TimeStamp Module 7ff7931f0000 e1cbfc53 Jan 16 14:56:43 2090 C:\\Windows\\System32\\cmd.exe 7ffe5edb0000 2f715b17 Mar 23 16:57:19 1995 C:\\Windows\\SYSTEM32\\ntdll.dll 7ffe5e530000 71a43e4a Jun 02 05:37:38 2030 C:\\Windows\\System32\\KERNEL32.DLL 7ffe5ca70000 a1c3e870 Jan 01 22:16:40 2056 C:\\Windows\\System32\\KERNELBASE.dll 7ffe5cef0000 564f9f39 Nov 21 04:01:21 2015 C:\\Windows\\System32\\msvcrt.dll 7ffe5d550000 03e7e147 Jan 29 15:45:35 1972 C:\\Windows\\System32\\combase.dll 7ffe5c5f0000 2bd748bf Apr 23 07:09:11 1993 C:\\Windows\\System32\\ucrtbase.dll 7ffe5cf90000 2261afdc Apr 12 11:19:16 1988 C:\\Windows\\System32\\RPCRT4.dll 7ffe469f0000 112f521c Feb 20 04:41:24 1979 C:\\Windows\\SYSTEM32\\winbrand.dll 7ffe5e430000 9370b239 May 21 06:43:29 2048 C:\\Windows\\System32\\sechost.dll 7ffe58140000 951bdbb4 Apr 10 06:58:20 2049 C:\\Windows\\SYSTEM32\\cmdext.dll 7ffe5e620000 18db2b76 Mar 20 19:28:14 1983 C:\\Windows\\System32\\SHELL32.dll 7ffe5cd70000 39255ccf May 19 20:55:03 2000 C:\\Windows\\System32\\msvcp_win.dll 7ffe5d160000 32a2a2e9 Dec 02 15:05:37 1996 C:\\Windows\\System32\\USER32.dll 7ffe5ca40000 0dcd0213 May 04 01:56:59 1977 C:\\Windows\\System32\\win32u.dll 7ffe5e5f0000 eeb3a47d Nov 26 12:11:01 2096 C:\\Windows\\System32\\GDI32.dll 7ffe5c920000 b89e115a Feb 25 09:11:14 2068 C:\\Windows\\System32\\gdi32full.dll 7ffe5e1e0000 68ff10be Oct 27 11:57:10 2025 C:\\Windows\\System32\\IMM32.DLL 7ffe5c7e0000 856685b0 Dec 03 00:47:04 2040 C:\\Windows\\System32\\bcryptPrimitives.dll 7ffe515e0000 db2b08ef Jul 09 10:53:59 2086 \u003c Name not readable \u003e 7ffe5d4a0000 29534f79 Dec 21 19:58:09 1991 C:\\Windows\\System32\\SHCORE.dll 7ffe5e4d0000 19bb5737 Sep 06 20:22:39 1983 C:\\Windows\\System32\\shlwapi.dll 7ffe5a570000 8eecb4fc Dec 26 10:35:00 2045 C:\\Windows\\SYSTEM32\\windows.storage.dll 7ffe5be10000 db45726f Jul 29 11:43:03 2086 C:\\Windows\\System32\\Wldp.dll 7ffe5ddf0000 6869db26 Jul 06 07:40:46 2025 C:\\Windows\\System32\\advapi32.dll 7ffe5a370000 f0713fcd Oct 30 12:12:21 2097 C:\\Windows\\SYSTEM32\\kernel.appcore.dll 7ffe59ea0000 06bc4541 Aug 01 02:53:13 1973 C:\\Windows\\system32\\uxtheme.dll 7ffe5dea0000 2f888521 Apr 10 06:38:49 1995 C:\\Windows\\System32\\ole32.dll 7ffe58010000 3a69740d Jan 20 16:48:37 2001 C:\\Windows\\System32\\PROPSYS.dll 7ffe5dd20000 61567b6b Oct 01 08:37:23 2021 C:\\Windows\\System32\\OLEAUT32.dll 7ffe5dfe0000 a7c9263e Mar 15 23:43:18 2059 C:\\Windows\\System32\\clbcatq.dll 7ffe5c3d0000 793b0534 Jun 14 20:48:12 2034 C:\\Windows\\System32\\profapi.dll 7ffe40d70000 be357357 Feb 15 02:42:55 2071 \u003c Name not readable \u003e 7ffe5c6f0000 04ed5855 Aug 14 23:35:09 1972 \u003c Name not readable \u003e 7ffe51290000 e4672001 Jun 06 15:50:49 2091 C:\\Windows\\System32\\urlmon.dll 7ffe50fd0000 443050a9 Apr 03 04:01:05 2006 C:\\Windows\\System32\\iertutil.dll 7ffe5b970000 fcf57d1b Jun 26 23:36:19 2104 C:\\Windows\\System32\\netutils.dll 7ffe50f90000 58a8ec81 Feb 19 06:23:21 2017 C:\\Windows\\System32\\srvcli.dll 7ffe5c380000 1d683fd4 Aug 20 13:05:48 1985 C:\\Windows\\System32\\SspiCli.dll 7ffe4d960000 af44cd81 Mar 08 01:07:37 2063 C:\\Windows\\SYSTEM32\\virtdisk.dll 7ffe496c0000 2ea9f33d Oct 23 10:53:09 1994 C:\\Windows\\SYSTEM32\\FLTLIB.DLL 7ffe4f500000 0d302819 Jan 05 02:33:21 1977 C:\\Windows\\System32\\MPR.dll 7ffe46910000 6b7310c3 Feb 15 20:20:43 2027 \u003c Name not readable \u003e 7ffe47610000 fafdac70 Jun 10 19:55:52 2103 C:\\Windows\\System32\\sfc_os.dll 7ffe5d8b0000 ad12c63e Jan 05 17:42:46 2062 C:\\Windows\\System32\\SETUPAPI.dll 7ffe5c740000 87ca24c8 Mar 11 23:00:48 2042 \u003c Name not readable \u003e SubSystemData: 0000000000000000 ProcessHeap: 000001c764120000 ProcessParameters: 000001c764121cb0 CurrentDirectory: 'C:\\Users\\w0w\\Downloads\\' WindowTitle: 'C:\\Windows\\System32\\cmd.exe' ImageFile: 'C:\\Windows\\System32\\cmd.exe' CommandLine: '\"C:\\Windows\\System32\\cmd.exe\" ' DllPath: '\u003c Name not readable \u003e' Environment: 000001c7641ed5b0 Unable to read Environment string. To display a process along with all its threads, their stack traces, and the arguments passed to functions in each thread\n!process 0: kd\u003e !process ffffc509bf28b080 7 PROCESS ffffc509bf28b080 SessionId: 1 Cid: 1164 Peb: 72ce659000 ParentCid: 1148 DirBase: 5e2bc002 ObjectTable: ffff99011473e500 HandleCount: 245. Image: cmd.exe VadRoot ffffc509c25d2850 Vads 97 Clone 0 Private 541. Modified 1639. Locked 0. DeviceMap ffff99010c29f0d0 Token ffff9901102cf5f0 ElapsedTime 00:10:08.787 UserTime 00:00:00.000 KernelTime 00:00:00.015 QuotaPoolUsage[PagedPool] 185888 QuotaPoolUsage[NonPagedPool] 13712 Working Set Sizes (now,min,max) (360, 50, 345) (1440KB, 200KB, 1380KB) PeakWorkingSetSize 5030 VirtualSize 2101370 Mb PeakVirtualSize 2101386 Mb PageFaultCount 8156 MemoryPriority BACKGROUND BasePriority 8 CommitCharge 1805 THREAD ffffc509bf2e1080 Cid 1164.1a28 Teb: 00000072ce65a000 Win32Thread: ffffc509c19bad00 WAIT: (UserRequest) UserMode Non-Alertable ffffc509c1f6c080 ProcessObject Not impersonating DeviceMap ffff99010c29f0d0 Owning Process ffffc509bf28b080 Image: cmd.exe Attached Process N/A Image: N/A Wait Start TickCount 130470 Ticks: 18090 (0:00:04:42.656) Context Switch Count 674 IdealProcessor: 1 UserTime 00:00:00.015 KernelTime 00:00:00.046 Win32 Start Address 0x00007ff793208f50 Stack Init ffffc10f7221f650 Current ffffc10f7221f060 Base ffffc10f72220000 Limit ffffc10f72219000 Call 0000000000000000 Priority 9 BasePriority 8 IoPriority 2 PagePriority 5 Kernel stack not resident. Child-SP RetAddr : Args to Child : Call Site ffffc10f`7221f0a0 fffff807`1e2349c0 : ffffb000`adde7180 00000000`ffffffff ffffc10f`7221f220 ffffc509`bf28b700 : nt!KiSwapContext+0x76 ffffc10f`7221f1e0 fffff807`1e233eef : 00000000`00000001 00000000`00000003 ffffc10f`7221f3a0 00000000`00000000 : nt!KiSwapThread+0x500 ffffc10f`7221f290 fffff807`1e233793 : 00000000`00000000 fffff807`00000000 00000000`00000700 ffffc509`bf2e11c0 : nt!KiCommitThreadWait+0x14f ffffc10f`7221f330 fffff807`1e629641 : ffffc509`c1f6c080 00000000`00000006 00000000`00000001 00000000`00000000 : nt!KeWaitForSingleObject+0x233 ffffc10f`7221f420 fffff807`1e62959a : ffffc509`bf2e1080 00000000`00000000 00000000`00000000 00000000`00000002 : nt!ObWaitForSingleObject+0x91 ffffc10f`7221f480 fffff807`1e4274f5 : ffffc509`bf2e1000 00000000`00001000 00000000`00000000 00000000`00000000 : nt!NtWaitForSingleObject+0x6a ffffc10f`7221f4c0 00007ffe`5ee4d0e4 : 00000000`00000000 00000000`00000000 00000000`00000000 00000000`00000000 : nt!KiSystemServiceCopyEnd+0x25 (TrapFrame @ ffffc10f`7221f4c0) 00000072`ce8feda8 00000000`00000000 : 00000000`00000000 00000000`00000000 00000000`00000000 00000000`00000000 : 0x00007ffe`5ee4d0e4 THREAD ffffc509bdfa4040 Cid 1164.19b0 Teb: 00000072ce66c000 Win32Thread: 0000000000000000 WAIT: (WrQueue) UserMode Alertable ffffc509bd99bbc0 QueueObject Not impersonating DeviceMap ffff99010c29f0d0 Owning Process ffffc509bf28b080 Image: cmd.exe Attached Process N/A Image: N/A Wait Start TickCount 148010 Ticks: 550 (0:00:00:08.593) Context Switch Count 63 IdealProcessor: 0 UserTime 00:00:00.000 KernelTime 00:00:00.000 Win32 Start Address 0x00007ffe5ee02b20 Stack Init ffffc10f74aef650 Current ffffc10f74aeed80 Base ffffc10f74af0000 Limit ffffc10f74ae9000 Call 0000000000000000 Priority 9 BasePriority 8 IoPriority 2 PagePriority 5 Child-SP RetAddr : Args to Child : Call Site ffffc10f`74aeedc0 fffff807`1e2349c0 : ffffb000`ad9ea180 fffff807`ffffffff ffffec00`0076a970 0a000000`278dd025 : nt!KiSwapContext+0x76 ffffc10f`74aeef00 fffff807`1e233eef : c509bc22`00000002 ffffc10f`00000001 00000000`00000000 ffffec00`00000000 : nt!KiSwapThread+0x500 ffffc10f`74aeefb0 fffff807`1e21fd73 : ffffc10f`00000000 00000000`00000000 ffffc509`00000000 00000000`00000001 : nt!KiCommitThreadWait+0x14f ffffc10f`74aef050 fffff807`1e21f7a8 : ffffc509`bd99bbc0 ffffc509`c13d3730 ffffc10f`74aef220 8a000000`00000000 : nt!KeRemoveQueueEx+0x263 ffffc10f`74aef0f0 fffff807`1e21f258 : 00000000`00000000 ffffc509`bf28b700 ffffc10f`74aef350 ffffc509`bdfa4040 : nt!IoRemoveIoCompletion+0x98 ffffc10f`74aef220 fffff807`1e4274f5 : 00000000`00000000 00000000`00000000 00000000`00000000 00000072`ce659000 : nt!NtWaitForWorkViaWorkerFactory+0xdc8 ffffc10f`74aef450 00007ffe`5ee50ad4 : 00000000`00000000 00000000`00000000 00000000`00000000 00000000`00000000 : nt!KiSystemServiceCopyEnd+0x25 (TrapFrame @ ffffc10f`74aef4c0) 00000072`ce9ff998 00000000`00000000 : 00000000`00000000 00000000`00000000 00000000`00000000 00000000`00000000 : 0x00007ffe`5ee50ad4 THREAD ffffc509bda44080 Cid 1164.1710 Teb: 00000072ce66e000 Win32Thread: 0000000000000000 WAIT: (WrQueue) UserMode Alertable ffffc509bd99bbc0 QueueObject Not impersonating DeviceMap ffff99010c29f0d0 Owning Process ffffc509bf28b080 Image: cmd.exe Attached Process N/A Image: N/A Wait Start TickCount 148010 Ticks: 550 (0:00:00:08.593) Context Switch Count 6 IdealProcessor: 1 UserTime 00:00:00.000 KernelTime 00:00:00.000 Win32 Start Address 0x00007ffe5ee02b20 Stack Init ffffc10f74ae7650 Current ffffc10f74ae6d80 Base ffffc10f74ae8000 Limit ffffc10f74ae1000 Call 0000000000000000 Priority 9 BasePriority 8 IoPriority 2 PagePriority 5 Child-SP RetAddr : Args to Child : Call Site ffffc10f`74ae6dc0 fffff807`1e2349c0 : ffffb000`adde7180 00007ffe`ffffffff ffffc509`00000000 ffffc509`bd5e79c0 : nt!KiSwapContext+0x76 ffffc10f`74ae6f00 fffff807`1e233eef : 00000000`00000001 00000000`00000002 00000000`00000000 00000000`00000000 : nt!KiSwapThread+0x500 ffffc10f`74ae6fb0 fffff807`1e21fd73 : 00000000`00000000 ffffc509`00000000 ffffc509`c242c100 00000000`00000001 : nt!KiCommitThreadWait+0x14f ffffc10f`74ae7050 fffff807`1e21f7a8 : ffffc509`bd99bbc0 ffffc509`c13d3730 ffffc10f`74ae74c0 ffffc509`00000000 : nt!KeRemoveQueueEx+0x263 ffffc10f`74ae70f0 fffff807`1e21f258 : 00000000`00000000 ffffc509`bf28b700 ffffc10f`74ae7350 ffffc509`bda44080 : nt!IoRemoveIoCompletion+0x98 ffffc10f`74ae7220 fffff807`1e4274f5 : 00000000`00000000 00000000`00000000 00000000`00000000 ffffc509`bdcef810 : nt!NtWaitForWorkViaWorkerFactory+0xdc8 ffffc10f`74ae7450 00007ffe`5ee50ad4 : 00000000`00000000 00000000`00000000 00000000`00000000 00000000`00000000 : nt!KiSystemServiceCopyEnd+0x25 (TrapFrame @ ffffc10f`74ae74c0) 00000072`ceaff6f8 00000000`00000000 : 00000000`00000000 00000000`00000000 00000000`00000000 00000000`00000000 : 0x00007ffe`5ee50ad4 THREAD ffffc509bdbf8080 Cid 1164.1e84 Teb: 00000072ce670000 Win32Thread: 0000000000000000 WAIT: (WrQueue) UserMode Alertable ffffc509bd99bbc0 QueueObject Not impersonating DeviceMap ffff99010c29f0d0 Owning Process ffffc509bf28b080 Image: cmd.exe Attached Process N/A Image: N/A Wait Start TickCount 148010 Ticks: 550 (0:00:00:08.593) Context Switch Count 4 IdealProcessor: 0 UserTime 00:00:00.000 KernelTime 00:00:00.000 Win32 Start Address 0x00007ffe5ee02b20 Stack Init ffffc10f74b0f650 Current ffffc10f74b0ed80 Base ffffc10f74b10000 Limit ffffc10f74b09000 Call 0000000000000000 Priority 9 BasePriority 8 IoPriority 2 PagePriority 5 Child-SP RetAddr : Args to Child : Call Site ffffc10f`74b0edc0 fffff807`1e2349c0 : ffffb000`ad9ea180 00007ffe`ffffffff ffffec00`0154dfd0 0a000000`719ff025 : nt!KiSwapContext+0x76 ffffc10f`74b0ef00 fffff807`1e233eef : 00000000`00000002 ffffc10f`00000000 00000000`00000000 ffffb000`00000000 : nt!KiSwapThread+0x500 ffffc10f`74b0efb0 fffff807`1e21fd73 : 00000000`00000000 ffffc509`00000000 00000000`00000000 00000000`00000001 : nt!KiCommitThreadWait+0x14f ffffc10f`74b0f050 fffff807`1e21f7a8 : ffffc509`bd99bbc0 ffffc509`c13d3730 ffffc10f`74b0f4c0 ffffadd6`00000000 : nt!KeRemoveQueueEx+0x263 ffffc10f`74b0f0f0 fffff807`1e21f258 : 00000000`00000000 ffffc509`bf28b700 ffffc10f`74b0f350 00000000`00000000 : nt!IoRemoveIoCompletion+0x98 ffffc10f`74b0f220 fffff807`1e4274f5 : 00000000`00000000 00000000`00000000 00000000`00000000 00000000`00000000 : nt!NtWaitForWorkViaWorkerFactory+0xdc8 ffffc10f`74b0f450 00007ffe`5ee50ad4 : 00000000`00000000 00000000`00000000 00000000`00000000 00000000`00000000 : nt!KiSystemServiceCopyEnd+0x25 (TrapFrame @ ffffc10f`74b0f4c0) 00000072`cebff848 00000000`00000000 : 00000000`00000000 00000000`00000000 00000000`00000000 00000000`00000000 : 0x00007ffe`5ee50ad4 0: kd\u003e !lt ffffc509bf28b080 Process PID Thread Id State Time Reason Waiting On ======= ==== ================ ==== ======= ========= =========== ================================ cmd.exe 1164 ffffc509bf2e1080 1a28 Waiting 4m:42.656 UserRequest Process: powershell.exe (0n6672) cmd.exe 1164 ffffc509bdfa4040 19b0 Waiting 8s.593 WrQueue cmd.exe 1164 ffffc509bda44080 1710 Waiting 8s.593 WrQueue cmd.exe 1164 ffffc509bdbf8080 1e84 Waiting 8s.593 WrQueue Thread Count: 4 List All the processes tl: To list all the running process in the machine.\n0: kd\u003e !tl PID Address Name ============= ================ ============================= 0x0 0n0 fffff8071ed3ca00 Idle 0x4 0n4 ffffc509b8884040 System 0x6c 0n108 ffffc509b88cb080 Registry 0x158 0n344 ffffc509baaf4040 smss.exe 0x1c8 0n456 ffffc509ba45c140 csrss.exe 0x214 0n532 ffffc509bc17d080 wininit.exe 0x21c 0n540 ffffc509bc16f080 csrss.exe 0x270 0n624 ffffc509bc1d3080 winlogon.exe 0x2a8 0n680 ffffc509bc1e9140 services.exe 0x2b0 0n688 ffffc509bd20d140 lsass.exe 0x334 0n820 ffffc509bc1e8300 svchost.exe(-p) 0x350 0n848 ffffc509bd290200 fontdrvhost.exe 0x354 0n852 ffffc509bd28e200 fontdrvhost.exe 0x3b4 0n948 ffffc509bd21c080 svchost.exe(-p) 0x198 0n408 ffffc509bd3a8080 dwm.exe 0x2d0 0n720 ffffc509bd415300 svchost.exe(-p) 0x17c 0n380 ffffc509bd41f080 svchost.exe(-p) 0x43c 0n1084 ffffc509bd433340 svchost.exe(-p) 0x454 0n1108 ffffc509bd443080 svchost.exe(-p) 0x4bc 0n1212 ffffc509bd48e0c0 svchost.exe(-p) 0x540 0n1344 ffffc509bd57b0c0 svchost.exe(-p) 0x5b4 0n1460 ffffc509bd5e8040 MemCompression 0x6c8 0n1736 ffffc509bd6c4300 svchost.exe(-p) 0x714 0n1812 ffffc509b89b1080 svchost.exe 0x71c 0n1820 ffffc509b89b3080 svchost.exe 0x798 0n1944 ffffc509b8962340 svchost.exe(-p) 0x7f4 0n2036 ffffc509bd7ac0c0 spoolsv.exe 0x578 0n1400 ffffc509b890b080 svchost.exe(-p) 0x5e8 0n1512 ffffc509b8907080 svchost.exe 0x958 0n2392 ffffc509bd860340 dasHost.exe 0x964 0n2404 ffffc509bd863080 svchost.exe(-p) 0x974 0n2420 ffffc509bd864080 Everything.exe 0x984 0n2436 ffffc509bd89a080 IpOverUsbSvc.exe*32 0x9c0 0n2496 ffffc509bd8b4080 MpDefenderCoreService.exe 0x9f4 0n2548 ffffc509bdb04300 vm3dservice.exe 0x9fc 0n2556 ffffc509bdb020c0 VGAuthService.exe 0xa0c 0n2572 ffffc509bdb03080 vmtoolsd.exe 0xa18 0n2584 ffffc509bdb07080 MsMpEng.exe 0xaa4 0n2724 ffffc509bdbac340 vm3dservice.exe 0xbec 0n3052 ffffc509bd961080 dllhost.exe 0x920 0n2336 ffffc509bdc6a340 WmiPrvSE.exe 0xc48 0n3144 ffffc509bde27300 svchost.exe(-p) 0xd3c 0n3388 ffffc509bdfa2080 msdtc.exe 0xd94 0n3476 ffffc509bdf772c0 dllhost.exe 0xdfc 0n3580 ffffc509bdfec080 svchost.exe 0x7c0 0n1984 ffffc509bf294080 NisSrv.exe 0x524 0n1316 ffffc509bf21b080 svchost.exe(-p) 0xf14 0n3860 ffffc509bfbc70c0 MicrosoftEdgeUpdate.exe*32 0x7a4 0n1956 ffffc509bfa8f080 SgrmBroker.exe 0x5f0 0n1520 ffffc509bfce3080 uhssvc.exe 0x668 0n1640 ffffc509bfbe4080 MoUsoCoreWorker.exe 0x102c 0n4140 ffffc509bfcf3080 svchost.exe 0x1064 0n4196 ffffc509bfd57300 SearchIndexer.exe 0x7b0 0n1968 ffffc509bd51d080 svchost.exe 0x117c 0n4476 ffffc509c04f3080 sihost.exe 0x136c 0n4972 ffffc509c0490080 svchost.exe(UnistackSvcGroup) 0x47c 0n1148 ffffc509bfd4c080 taskhostw.exe 0xc7c 0n3196 ffffc509bfeec080 ctfmon.exe 0x1148 0n4424 ffffc509c16df080 explorer.exe 0xf9c 0n3996 ffffc509bfe4a080 svchost.exe(-p) 0xd2c 0n3372 ffffc509c11cc080 ApplicationFrameHost.exe 0xd88 0n3464 ffffc509c0c08080 StartMenuExperienceHost.exe 0x53c 0n1340 ffffc509c0ed0080 RuntimeBroker.exe 0xfec 0n4076 ffffc509c0fa6080 SearchApp.exe 0x1468 0n5224 ffffc509c1dc6080 RuntimeBroker.exe 0xa9c 0n2716 ffffc509c1c18080 RuntimeBroker.exe 0x7dc 0n2012 ffffc509c1e1a240 SecurityHealthSystray.exe 0x1740 0n5952 ffffc509c1c29340 SecurityHealthService.exe 0xcac 0n3244 ffffc509c1d0d080 vmtoolsd.exe 0x170 0n368 ffffc509bc059080 Everything.exe 0x6dc 0n1756 ffffc509c04d60c0 OneDrive.exe 0x14e8 0n5352 ffffc509c0ca9080 SystemSettings.exe 0xe9c 0n3740 ffffc509c0c0a080 UserOOBEBroker.exe 0x1a80 0n6784 ffffc509c1de5080 smartscreen.exe 0x1164 0n4452 ffffc509bf28b080 cmd.exe 0xb90 0n2960 ffffc509c0ed2080 conhost.exe 0x1548 0n5448 ffffc509bfd5f080 audiodg.exe 0x1ba8 0n7080 ffffc509c1168080 TextInputHost.exe 0x460 0n1120 ffffc509c1d37080 taskhostw.exe 0x175c 0n5980 ffffc509c1d60080 dllhost.exe 0x14ac 0n5292 ffffc509c0492080 SearchApp.exe 0x1a30 0n6704 ffffc509c1dd3080 msedgewebview2.exe 0x12a0 0n4768 ffffc509bfdaf080 msedgewebview2.exe 0x1574 0n5492 ffffc509c1b09080 msedgewebview2.exe 0x1d4 0n468 ffffc509bfdd1080 msedgewebview2.exe 0xd68 0n3432 ffffc509c0dbd080 msedgewebview2.exe 0x14cc 0n5324 ffffc509c226b080 msedgewebview2.exe 0x1a08 0n6664 ffffc509c1b130c0 msedge.exe 0x6e0 0n1760 ffffc509c238a0c0 msedge.exe 0x156c 0n5484 ffffc509c1e0a080 msedge.exe 0x1cbc 0n7356 ffffc509c2030080 msedge.exe 0x1c84 0n7300 ffffc509c1e09080 msedge.exe 0x1a10 0n6672 ffffc509c1f6c080 powershell.exe 0x18fc 0n6396 ffffc509c1b0a080 Microsoft.Photos.exe 0x1b6c 0n7020 ffffc509c1ee9080 RuntimeBroker.exe 0x177c 0n6012 ffffc509c0f88080 010Editor.exe 0x5a8 0n1448 ffffc509c222c340 notepad.exe 0x1ec4 0n7876 ffffc509c2397080 powershell.exe 0x1754 0n5972 ffffc509c43ab080 powershell.exe 0x860 0n2144 ffffc509bfeee080 mspaint.exe 0x1f3c 0n7996 ffffc509c2ddd080 svchost.exe 0xcbc 0n3260 ffffc509c226d080 DumpIt.exe 0x55c 0n1372 ffffc509c42ec0c0 conhost.exe ============= ================ ============================= PID Address Name Warning! Zombie process(es) detected (not displayed). Count: 2 [zombie report] To list the zombie process.\n0: kd\u003e !tl -z PID Address Name Ses Thd Obj Handles Obj Pointers ============= ================ ============ === === =========== ============ 0x1174 0n4468 ffffc509c16e0080 userinit.exe 1 0 1 1 0x1894 0n6292 ffffc509c1a020c0 msedge.exe 1 0 0 1 ============= ================ ============ === === =========== ============ PID Address Name Ses Thd Obj Handles Obj Pointers For more detailed view, use !tl -stat. It provides information like\nPID: Unique Process Identifier assigned by the system. Address: Memory address where the process structure resides. Name: Executable name of the process. UserTime: Total time the process has spent executing in user mode. KernelTime: Total time the process has spent executing in kernel mode. TotalTime: Sum of UserTime and KernelTime, representing total CPU usage. Virtual Memory Size: Total virtual memory allocated to the process. Peak Memory Size: Highest amount of memory the process has used. Shared Memory Size: Amount of memory shared with other processes. Commit Size: Amount of memory committed to the process (reserved for use). Address Windowing Extension (AWE): Indicates whether AWE is enabled for large memory management. Thread and Handles Count: Number of active threads and open handles in the process. Creation Time: Timestamp when the process was started. Command Line: Full command-line arguments used to launch the process. 0: kd\u003e !tl -stat PID Address Name User Kernel Total Ses VM Peak Shared Awe Size Commit Size PP Quota NPP Quota Thd Hnd Create Time Command Line ============= ================ ============================= ========= ============ ============ === ======== ========= ======== ======== =========== ========= ========= === === =================== ==================================================================================================================================================================================================================================================================================================================================================================================================================================================================================================================================================================================================================================================================================================================================================================================================================================================================================================================================== 0x9f4 0n2548 ffffc509bdb04300 vm3dservice.exe 16ms 0 16ms 0 2 TB 2 TB 1.97 MB 0 1.53 MB 81.55 KB 7.76 KB 3 0 10/12/2024 05:49 PM 0x354 0n852 ffffc509bd28e200 fontdrvhost.exe 0 16ms 16ms 0 2 TB 2 TB 368 KB 0 1.25 MB 36.09 KB 5.44 KB 5 0 10/12/2024 05:49 PM 0x12a0 0n4768 ffffc509bfdaf080 msedgewebview2.exe 16ms 0 16ms 1 2.07 TB 2.07 TB 3.31 MB 0 2.04 MB 114.23 KB 8.76 KB 10 0 10/12/2024 06:21 PM \"C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\129.0.2792.89\\msedgewebview2.exe\" --type=crashpad-handler --user-data-dir=C:\\Users\\w0w\\AppData\\Local\\Packages\\Microsoft.Windows.Search_E_KEY\u003e \u003e::BTreeIteratorFromSearchResult(struct B_TREE",
-  "wordCount" : "20728",
-  "inLanguage": "en",
-  "datePublished": "2025-01-30T18:28:18+05:30",
-  "dateModified": "2025-01-30T18:28:18+05:30",
-  "author":{
-    "@type": "Person",
-    "name": "5h4rrk"
-  },
-  "mainEntityOfPage": {
-    "@type": "WebPage",
-    "@id": "http://localhost:1313/posts/dumpanalysis/"
-  },
-  "publisher": {
-    "@type": "Organization",
-    "name": "shark.exe",
-    "logo": {
-      "@type": "ImageObject",
-      "url": "http://localhost:1313/favicon.ico"
-    }
-  }
-}
-</script>
+<html lang="en"><head><script src="/livereload.js?mindelay=10&amp;v=2&amp;port=1313&amp;path=livereload" data-no-instant defer></script>
+    <title>shark-asmx</title>
+    <meta content="text/html;charset=utf-8" http-equiv="Content-Type">
+    <meta content="utf-8" http-equiv="encoding">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="format-detection" content="telephone=no" />
+    <meta name="theme-color" content="#000084" />
+    <link rel="icon" href="http://localhost:1313//favicon.ico">
+    <link rel="canonical" href="http://localhost:1313/">
+    
+    
 </head>
-
-<body class="" id="top">
-<script>
-    if (localStorage.getItem("pref-theme") === "dark") {
-        document.body.classList.add('dark');
-    } else if (localStorage.getItem("pref-theme") === "light") {
-        document.body.classList.remove('dark')
-    } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
-        document.body.classList.add('dark');
-    }
-
-</script>
-
-<header class="header">
-    <nav class="nav">
-        <div class="logo">
-            <a href="http://localhost:1313/" accesskey="h" title="shark.exe (Alt + H)">shark.exe</a>
-            <div class="logo-switches">
-                <button id="theme-toggle" accesskey="t" title="(Alt + T)" aria-label="Toggle theme">
-                    <svg id="moon" xmlns="http://www.w3.org/2000/svg" width="24" height="18" viewBox="0 0 24 24"
-                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                        stroke-linejoin="round">
-                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
-                    </svg>
-                    <svg id="sun" xmlns="http://www.w3.org/2000/svg" width="24" height="18" viewBox="0 0 24 24"
-                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                        stroke-linejoin="round">
-                        <circle cx="12" cy="12" r="5"></circle>
-                        <line x1="12" y1="1" x2="12" y2="3"></line>
-                        <line x1="12" y1="21" x2="12" y2="23"></line>
-                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
-                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
-                        <line x1="1" y1="12" x2="3" y2="12"></line>
-                        <line x1="21" y1="12" x2="23" y2="12"></line>
-                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
-                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
-                    </svg>
-                </button>
+<body>
+<nav class="navbar navbar-inverse navbar-fixed-top">
+    <div class="navbar-inner">
+        <div class="container">
+            <button type="button" class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse"></button>
+            <a class="brand" href="http://localhost:1313/">shark-asmx</a>
+            <div class="nav-collapse collapse">
+                <ul class="nav">
+                    
+                    
+                        
+                            <li>
+                                <a href="/posts">
+                                    
+                                    <span>posts</span>
+                                </a>
+                            </li>
+                        
+                    
+                </ul>
             </div>
         </div>
-        <ul id="menu">
-            <li>
-                <a href="http://localhost:1313/tags" title="Tags">
-                    <span>Tags</span>
-                </a>
-            </li>
-        </ul>
-    </nav>
-</header>
-<main class="main">
+    </div>
+</nav><div id="content" class="container">
 
-<article class="post-single">
-  <header class="post-header">
-    <div class="breadcrumbs"><a href="http://localhost:1313/">Home</a>&nbsp;»&nbsp;<a href="http://localhost:1313/posts/">Posts</a></div>
-    <h1 class="post-title entry-hint-parent">
-      Kernel Memory Dump Analysis : Introduction
-    </h1>
-    <div class="post-meta"><span title='2025-01-30 18:28:18 +0530 IST'>January 30, 2025</span>&nbsp;·&nbsp;98 min&nbsp;·&nbsp;5h4rrk
-
-</div>
-  </header> <div class="toc">
-    <details >
-        <summary accesskey="c" title="(Alt + C)">
-            <span class="details">Table of Contents</span>
-        </summary>
-
-        <div class="inner"><ul><ul>
-                <li>
-                    <a href="#kernel-dump" aria-label="Kernel Dump">Kernel Dump</a></li>
-                <li>
-                    <a href="#types-of-kernel-memory-dumps" aria-label="Types of Kernel Memory Dumps">Types of Kernel Memory Dumps</a></li>
-                <li>
-                    <a href="#requirements" aria-label="Requirements">Requirements</a></li>
-                <li>
-                    <a href="#loading-mexdll" aria-label="Loading Mex.dll">Loading Mex.dll</a></li></ul>
-                    
-                <li>
-                    <a href="#memory-dump-analysis" aria-label="Memory Dump Analysis">Memory Dump Analysis</a><ul>
-                        
-                <li>
-                    <a href="#dump-information" aria-label="Dump Information">Dump Information</a></li>
-                <li>
-                    <a href="#computer-name" aria-label="Computer Name">Computer Name</a></li>
-                <li>
-                    <a href="#crash" aria-label="Crash">Crash</a></li>
-                <li>
-                    <a href="#where-am-i" aria-label="Where Am I">Where Am I</a></li>
-                <li>
-                    <a href="#list-threads" aria-label="List Threads">List Threads</a></li>
-                <li>
-                    <a href="#thread-lists" aria-label="Thread Lists">Thread Lists</a></li>
-                <li>
-                    <a href="#process" aria-label="Process">Process</a></li>
-                <li>
-                    <a href="#list-all-the-processes" aria-label="List All the processes">List All the processes</a></li>
-                <li>
-                    <a href="#unique-stack" aria-label="Unique Stack">Unique Stack</a></li>
-                <li>
-                    <a href="#interpretrawstack" aria-label="InterpretRawStack">InterpretRawStack</a>
-                </li>
-            </ul>
-            </li>
-            </ul>
-        </div>
-    </details>
-</div>
-
-  <div class="post-content"><h4 id="kernel-dump">Kernel Dump<a hidden class="anchor" aria-hidden="true" href="#kernel-dump">#</a></h4>
+<div class="row-fluid navmargin">
+    <div class="page-header">
+        <h1>Kernel Memory Dump Analysis : Introduction - Thu, Jan 30, 2025</h1>
+    </div>
+    <p class="lead"></p>
+    <h4 id="kernel-dump">Kernel Dump</h4>
 <p>A kernel dump is a snapshot of the system volatile memory (RAM) saved to the drive when the system crashes or the kernel (core part of the operating system) stops working.</p>
-<h4 id="types-of-kernel-memory-dumps">Types of Kernel Memory Dumps<a hidden class="anchor" aria-hidden="true" href="#types-of-kernel-memory-dumps">#</a></h4>
+<h4 id="types-of-kernel-memory-dumps">Types of Kernel Memory Dumps</h4>
 <ol>
 <li>
 <p><em><strong>Complete Memory Dump</strong></em>: Contains entire contents of system physical memory at the time of crash. It would be equal to your SYSTEM RAM size.</p>
@@ -257,7 +62,7 @@ how Windows manages the system pagefile size. It automatically adjust size. Init
 <p><em><strong>Active Memory Dump</strong></em>: Similar to <code>Complete Memory Dump</code>. The key difference is it filters out the pages that are not useful in trobuleshooting. It ignores the irrelevant pages.</p>
 </li>
 </ol>
-<h4 id="requirements">Requirements<a hidden class="anchor" aria-hidden="true" href="#requirements">#</a></h4>
+<h4 id="requirements">Requirements</h4>
 <ul>
 <li>
 <p><strong>WinDbg</strong>: WinDbg is a debugger that can be used to analyze crash dumps, debug live user-mode and kernel-mode code.</p>
@@ -267,11 +72,11 @@ how Windows manages the system pagefile size. It automatically adjust size. Init
 </li>
 </ul>
 <p><strong>Note</strong>: This is not a complete memory dump. Some commands may not function as intended.</p>
-<h4 id="loading-mexdll">Loading Mex.dll<a hidden class="anchor" aria-hidden="true" href="#loading-mexdll">#</a></h4>
+<h4 id="loading-mexdll">Loading Mex.dll</h4>
 <div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">0: kd&gt; .load C:<span class="se">\W</span>inDbgExt<span class="se">\m</span>ex.dll
 </span></span><span class="line"><span class="cl">Mex External 3.0.0.7172 Loaded!
-</span></span></code></pre></div><h3 id="memory-dump-analysis">Memory Dump Analysis<a hidden class="anchor" aria-hidden="true" href="#memory-dump-analysis">#</a></h3>
-<h4 id="dump-information">Dump Information<a hidden class="anchor" aria-hidden="true" href="#dump-information">#</a></h4>
+</span></span></code></pre></div><h3 id="memory-dump-analysis">Memory Dump Analysis</h3>
+<h4 id="dump-information">Dump Information</h4>
 <p><code>!di</code>: Displays dump information like <strong>Computer Name</strong>, <strong>Product</strong>, <strong>BugCheck Code</strong> and so on.</p>
 <pre tabindex="0"><code>0: kd&gt; !di
 Computer Name: DESKTOP-T1AH8JR
@@ -323,15 +128,15 @@ NumberParameters: 0
 
 Local Machine Name QUACK (QUACK\heysa)
 </code></pre><p>Opening the DUMP file in Hex Editor <a href="https://github.com/WerWolv/ImHex">ImHex</a> to analyze its contents. ImHex has collection of various pattern files that could be useful for understanding file structures and patterns.</p>
-<p><img alt="alt text" loading="lazy" src="image.png"></p>
-<h4 id="computer-name">Computer Name<a hidden class="anchor" aria-hidden="true" href="#computer-name">#</a></h4>
+<p><img src="image.png" alt="alt text"></p>
+<h4 id="computer-name">Computer Name</h4>
 <ul>
 <li><code>!cn</code>: Displays Computer Name</li>
 </ul>
 <p>Alias: <code>!name</code>, <code>!computername</code></p>
 <pre tabindex="0"><code>0: kd&gt; !cn
 Computer Name: DESKTOP-T1AH8JR
-</code></pre><h4 id="crash">Crash<a hidden class="anchor" aria-hidden="true" href="#crash">#</a></h4>
+</code></pre><h4 id="crash">Crash</h4>
 <ul>
 <li><code>!crash</code>:  Perfoms crash dump analysis and provides details</li>
 </ul>
@@ -368,7 +173,7 @@ Crashing Stack
 03 ffffc10f`7507f1a0 7fffc509`c25a3b80     nt!KiAbTreeArray+0xee10
 04 ffffc10f`7507f1a8 00000000`ffffffff     0x7fffc509`c25a3b80
 05 ffffc10f`7507f1b0 00000000`00000000     0xffffffff
-</code></pre><h4 id="where-am-i">Where Am I<a hidden class="anchor" aria-hidden="true" href="#where-am-i">#</a></h4>
+</code></pre><h4 id="where-am-i">Where Am I</h4>
 <p>To check at what proccess currently in. This will display processes name along with details such as PID, TID, TEB and Session.</p>
 <p>Alias: <code>!context</code></p>
 <pre tabindex="0"><code>0: kd&gt; !w
@@ -425,7 +230,7 @@ Priority:
 <li><strong>R (Ready)</strong> - Thread is ready to run but is not currently executing.</li>
 <li><strong>V (Wait for Event Pair Low)</strong> - Thread is waiting on an lower part of event pair (used in synchronization). Mostly appears in ALPC, RPC and User to Kernel Communication.</li>
 </ul>
-<h4 id="list-threads">List Threads<a hidden class="anchor" aria-hidden="true" href="#list-threads">#</a></h4>
+<h4 id="list-threads">List Threads</h4>
 <ul>
 <li><code>!lt</code>: To get list of threads of a process.</li>
 </ul>
@@ -507,7 +312,7 @@ Thread Count: 4
 </span></span><span class="line"><span class="cl">    <span class="mh">0x07</span><span class="o">:</span> <span class="s">&#34;DeferredReady&#34;</span><span class="p">,</span>  <span class="err">#</span> <span class="n">Windows</span> <span class="mf">5.2</span> <span class="n">and</span> <span class="n">higher</span>
 </span></span><span class="line"><span class="cl">    <span class="mh">0x08</span><span class="o">:</span> <span class="s">&#34;GateWait&#34;</span><span class="p">,</span>  <span class="err">#</span> <span class="n">Windows</span> <span class="mf">5.2</span> <span class="n">SP1</span> <span class="n">and</span> <span class="n">higher</span>
 </span></span><span class="line"><span class="cl">    <span class="mh">0x09</span><span class="o">:</span> <span class="s">&#34;WaitingForProcessInSwap&#34;</span>  <span class="err">#</span> <span class="n">Windows</span> <span class="mf">10.0</span> <span class="n">and</span> <span class="n">higher</span>
-</span></span></code></pre></div><h4 id="thread-lists">Thread Lists<a hidden class="anchor" aria-hidden="true" href="#thread-lists">#</a></h4>
+</span></span></code></pre></div><h4 id="thread-lists">Thread Lists</h4>
 <ul>
 <li><code>!lt</code>: Displays a list of threads.</li>
 </ul>
@@ -540,7 +345,7 @@ Thread Count: 4
 </span></span><span class="line"><span class="cl">    SessionId: <span class="m">1</span>  Cid: <span class="m">1164</span>    Peb: 72ce659000  ParentCid: <span class="m">1148</span>
 </span></span><span class="line"><span class="cl">    DirBase: 5e2bc002  ObjectTable: ffff99011473e500  HandleCount: 245.
 </span></span><span class="line"><span class="cl">    Image: cmd.exe
-</span></span></code></pre></div><h4 id="process">Process<a hidden class="anchor" aria-hidden="true" href="#process">#</a></h4>
+</span></span></code></pre></div><h4 id="process">Process</h4>
 <ul>
 <li><code>!p</code>: It displays process details</li>
 </ul>
@@ -760,7 +565,7 @@ Thread Count: 4
 </span></span><span class="line"><span class="cl">cmd.exe <span class="m">1164</span> ffffc509bdbf8080 1e84 Waiting    8s.593 WrQueue     
 </span></span><span class="line"><span class="cl">
 </span></span><span class="line"><span class="cl">Thread Count: <span class="m">4</span>
-</span></span></code></pre></div><h4 id="list-all-the-processes">List All the processes<a hidden class="anchor" aria-hidden="true" href="#list-all-the-processes">#</a></h4>
+</span></span></code></pre></div><h4 id="list-all-the-processes">List All the processes</h4>
 <p><code>tl</code>: To list all the running process in the machine.</p>
 <div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">0: kd&gt; !tl
 </span></span><span class="line"><span class="cl">PID           Address          <span class="nv">Name</span>
@@ -2851,7 +2656,7 @@ Thread Count: 4
 </span></span><span class="line"><span class="cl">
 </span></span><span class="line"><span class="cl">Thread Count: <span class="m">1458</span>
 </span></span></code></pre></div></details>
-<h4 id="unique-stack">Unique Stack<a hidden class="anchor" aria-hidden="true" href="#unique-stack">#</a></h4>
+<h4 id="unique-stack">Unique Stack</h4>
 <p><code>!us</code>: displays the unique call stacks of all threads within the current process, omitting any duplicate stacks. Useful for identifying distinct execution paths</p>
 <p>Alias: <code>!UniqueStacks</code></p>
 <p>Use <code>-p &lt;_EPROCESS&gt;</code> to list out unique stack</p>
@@ -3121,7 +2926,7 @@ Thread Count: 4
 </span></span><span class="line"><span class="cl">    00007ffe5ee50ad4 ntdll!NtWaitForWorkViaWorkerFactory+0x14
 </span></span><span class="line"><span class="cl">
 </span></span><span class="line"><span class="cl"><span class="m">7</span> stack<span class="o">(</span>s<span class="o">)</span> with <span class="m">11</span> threads displayed <span class="o">(</span><span class="m">11</span> Total threads<span class="o">)</span>
-</span></span></code></pre></div><h4 id="interpretrawstack">InterpretRawStack<a hidden class="anchor" aria-hidden="true" href="#interpretrawstack">#</a></h4>
+</span></span></code></pre></div><h4 id="interpretrawstack">InterpretRawStack</h4>
 <p><code>!irs</code>: dumps the raw stack, along with start and end of stack frame. It displays</p>
 <ul>
 <li>Frame Number</li>
@@ -3283,220 +3088,59 @@ Thread Count: 4
 <li>Explore the amazing repository by <a href="https://github.com/DebugPrivilege/InsightEngineering/tree/main/Debugging%20101/Section%201%3A%20Introduction%20to%20MEX">DebugPrivilege</a></li>
 </ul>
 
-
-  </div>
-
-  <footer class="post-footer">
-    <ul class="post-tags">
-      <li><a href="http://localhost:1313/tags/digital-forensics/">Digital Forensics</a></li>
-      <li><a href="http://localhost:1313/tags/kernel-dump/">Kernel Dump</a></li>
-      <li><a href="http://localhost:1313/tags/windows-troubleshooting/">Windows Troubleshooting</a></li>
-      <li><a href="http://localhost:1313/tags/dump-analysis/">Dump Analysis</a></li>
-      <li><a href="http://localhost:1313/tags/memory-forensics/">Memory Forensics</a></li>
-      <li><a href="http://localhost:1313/tags/windbg/">WinDbg</a></li>
-      <li><a href="http://localhost:1313/tags/windows/">Windows</a></li>
-    </ul>
-<nav class="paginav">
-  <a class="prev" href="http://localhost:1313/posts/application-crash-dump/">
-    <span class="title">« Prev</span>
-    <br>
-    <span>Application Crash Dump Analysis</span>
-  </a>
-  <a class="next" href="http://localhost:1313/posts/windows-shellcode2/">
-    <span class="title">Next »</span>
-    <br>
-    <span>Windows Shellcode Development &amp; Debugging with WinDbg: A Hands-On Guide (Part 2)</span>
-  </a>
-</nav>
+    <h4><a href="http://localhost:1313/">Back to Home</a></h4>
+</div>
 
 
-<ul class="share-buttons">
-    <li>
-        <a target="_blank" rel="noopener noreferrer" aria-label="share Kernel Memory Dump Analysis : Introduction on x"
-            href="https://x.com/intent/tweet/?text=Kernel%20Memory%20Dump%20Analysis%20%3a%20Introduction&amp;url=http%3a%2f%2flocalhost%3a1313%2fposts%2fdumpanalysis%2f&amp;hashtags=DigitalForensics%2cKernelDump%2cWindowsTroubleshooting%2cDumpAnalysis%2cMemoryForensics%2cWinDbg%2cWindows">
-            <svg version="1.1" viewBox="0 0 512 512" xml:space="preserve" height="30px" width="30px" fill="currentColor">
-                <path
-                    d="M512 62.554 L 512 449.446 C 512 483.97 483.97 512 449.446 512 L 62.554 512 C 28.03 512 0 483.97 0 449.446 L 0 62.554 C 0 28.03 28.029 0 62.554 0 L 449.446 0 C 483.971 0 512 28.03 512 62.554 Z M 269.951 190.75 L 182.567 75.216 L 56 75.216 L 207.216 272.95 L 63.9 436.783 L 125.266 436.783 L 235.9 310.383 L 332.567 436.783 L 456 436.783 L 298.367 228.367 L 432.367 75.216 L 371.033 75.216 Z M 127.633 110 L 164.101 110 L 383.481 400.065 L 349.5 400.065 Z" />
-            </svg>
-        </a>
-    </li>
-    <li>
-        <a target="_blank" rel="noopener noreferrer" aria-label="share Kernel Memory Dump Analysis : Introduction on linkedin"
-            href="https://www.linkedin.com/shareArticle?mini=true&amp;url=http%3a%2f%2flocalhost%3a1313%2fposts%2fdumpanalysis%2f&amp;title=Kernel%20Memory%20Dump%20Analysis%20%3a%20Introduction&amp;summary=Kernel%20Memory%20Dump%20Analysis%20%3a%20Introduction&amp;source=http%3a%2f%2flocalhost%3a1313%2fposts%2fdumpanalysis%2f">
-            <svg version="1.1" viewBox="0 0 512 512" xml:space="preserve" height="30px" width="30px" fill="currentColor">
-                <path
-                    d="M449.446,0c34.525,0 62.554,28.03 62.554,62.554l0,386.892c0,34.524 -28.03,62.554 -62.554,62.554l-386.892,0c-34.524,0 -62.554,-28.03 -62.554,-62.554l0,-386.892c0,-34.524 28.029,-62.554 62.554,-62.554l386.892,0Zm-288.985,423.278l0,-225.717l-75.04,0l0,225.717l75.04,0Zm270.539,0l0,-129.439c0,-69.333 -37.018,-101.586 -86.381,-101.586c-39.804,0 -57.634,21.891 -67.617,37.266l0,-31.958l-75.021,0c0.995,21.181 0,225.717 0,225.717l75.02,0l0,-126.056c0,-6.748 0.486,-13.492 2.474,-18.315c5.414,-13.475 17.767,-27.434 38.494,-27.434c27.135,0 38.007,20.707 38.007,51.037l0,120.768l75.024,0Zm-307.552,-334.556c-25.674,0 -42.448,16.879 -42.448,39.002c0,21.658 16.264,39.002 41.455,39.002l0.484,0c26.165,0 42.452,-17.344 42.452,-39.002c-0.485,-22.092 -16.241,-38.954 -41.943,-39.002Z" />
-            </svg>
-        </a>
-    </li>
-    <li>
-        <a target="_blank" rel="noopener noreferrer" aria-label="share Kernel Memory Dump Analysis : Introduction on reddit"
-            href="https://reddit.com/submit?url=http%3a%2f%2flocalhost%3a1313%2fposts%2fdumpanalysis%2f&title=Kernel%20Memory%20Dump%20Analysis%20%3a%20Introduction">
-            <svg version="1.1" viewBox="0 0 512 512" xml:space="preserve" height="30px" width="30px" fill="currentColor">
-                <path
-                    d="M449.446,0c34.525,0 62.554,28.03 62.554,62.554l0,386.892c0,34.524 -28.03,62.554 -62.554,62.554l-386.892,0c-34.524,0 -62.554,-28.03 -62.554,-62.554l0,-386.892c0,-34.524 28.029,-62.554 62.554,-62.554l386.892,0Zm-3.446,265.638c0,-22.964 -18.616,-41.58 -41.58,-41.58c-11.211,0 -21.361,4.457 -28.841,11.666c-28.424,-20.508 -67.586,-33.757 -111.204,-35.278l18.941,-89.121l61.884,13.157c0.756,15.734 13.642,28.29 29.56,28.29c16.407,0 29.706,-13.299 29.706,-29.701c0,-16.403 -13.299,-29.702 -29.706,-29.702c-11.666,0 -21.657,6.792 -26.515,16.578l-69.105,-14.69c-1.922,-0.418 -3.939,-0.042 -5.585,1.036c-1.658,1.073 -2.811,2.761 -3.224,4.686l-21.152,99.438c-44.258,1.228 -84.046,14.494 -112.837,35.232c-7.468,-7.164 -17.589,-11.591 -28.757,-11.591c-22.965,0 -41.585,18.616 -41.585,41.58c0,16.896 10.095,31.41 24.568,37.918c-0.639,4.135 -0.99,8.328 -0.99,12.576c0,63.977 74.469,115.836 166.33,115.836c91.861,0 166.334,-51.859 166.334,-115.836c0,-4.218 -0.347,-8.387 -0.977,-12.493c14.564,-6.47 24.735,-21.034 24.735,-38.001Zm-119.474,108.193c-20.27,20.241 -59.115,21.816 -70.534,21.816c-11.428,0 -50.277,-1.575 -70.522,-21.82c-3.007,-3.008 -3.007,-7.882 0,-10.889c3.003,-2.999 7.882,-3.003 10.885,0c12.777,12.781 40.11,17.317 59.637,17.317c19.522,0 46.86,-4.536 59.657,-17.321c3.016,-2.999 7.886,-2.995 10.885,0.008c3.008,3.011 3.003,7.882 -0.008,10.889Zm-5.23,-48.781c-16.373,0 -29.701,-13.324 -29.701,-29.698c0,-16.381 13.328,-29.714 29.701,-29.714c16.378,0 29.706,13.333 29.706,29.714c0,16.374 -13.328,29.698 -29.706,29.698Zm-160.386,-29.702c0,-16.381 13.328,-29.71 29.714,-29.71c16.369,0 29.689,13.329 29.689,29.71c0,16.373 -13.32,29.693 -29.689,29.693c-16.386,0 -29.714,-13.32 -29.714,-29.693Z" />
-            </svg>
-        </a>
-    </li>
-    <li>
-        <a target="_blank" rel="noopener noreferrer" aria-label="share Kernel Memory Dump Analysis : Introduction on facebook"
-            href="https://facebook.com/sharer/sharer.php?u=http%3a%2f%2flocalhost%3a1313%2fposts%2fdumpanalysis%2f">
-            <svg version="1.1" viewBox="0 0 512 512" xml:space="preserve" height="30px" width="30px" fill="currentColor">
-                <path
-                    d="M449.446,0c34.525,0 62.554,28.03 62.554,62.554l0,386.892c0,34.524 -28.03,62.554 -62.554,62.554l-106.468,0l0,-192.915l66.6,0l12.672,-82.621l-79.272,0l0,-53.617c0,-22.603 11.073,-44.636 46.58,-44.636l36.042,0l0,-70.34c0,0 -32.71,-5.582 -63.982,-5.582c-65.288,0 -107.96,39.569 -107.96,111.204l0,62.971l-72.573,0l0,82.621l72.573,0l0,192.915l-191.104,0c-34.524,0 -62.554,-28.03 -62.554,-62.554l0,-386.892c0,-34.524 28.029,-62.554 62.554,-62.554l386.892,0Z" />
-            </svg>
-        </a>
-    </li>
-    <li>
-        <a target="_blank" rel="noopener noreferrer" aria-label="share Kernel Memory Dump Analysis : Introduction on whatsapp"
-            href="https://api.whatsapp.com/send?text=Kernel%20Memory%20Dump%20Analysis%20%3a%20Introduction%20-%20http%3a%2f%2flocalhost%3a1313%2fposts%2fdumpanalysis%2f">
-            <svg version="1.1" viewBox="0 0 512 512" xml:space="preserve" height="30px" width="30px" fill="currentColor">
-                <path
-                    d="M449.446,0c34.525,0 62.554,28.03 62.554,62.554l0,386.892c0,34.524 -28.03,62.554 -62.554,62.554l-386.892,0c-34.524,0 -62.554,-28.03 -62.554,-62.554l0,-386.892c0,-34.524 28.029,-62.554 62.554,-62.554l386.892,0Zm-58.673,127.703c-33.842,-33.881 -78.847,-52.548 -126.798,-52.568c-98.799,0 -179.21,80.405 -179.249,179.234c-0.013,31.593 8.241,62.428 23.927,89.612l-25.429,92.884l95.021,-24.925c26.181,14.28 55.659,21.807 85.658,21.816l0.074,0c98.789,0 179.206,-80.413 179.247,-179.243c0.018,-47.895 -18.61,-92.93 -52.451,-126.81Zm-126.797,275.782l-0.06,0c-26.734,-0.01 -52.954,-7.193 -75.828,-20.767l-5.441,-3.229l-56.386,14.792l15.05,-54.977l-3.542,-5.637c-14.913,-23.72 -22.791,-51.136 -22.779,-79.287c0.033,-82.142 66.867,-148.971 149.046,-148.971c39.793,0.014 77.199,15.531 105.329,43.692c28.128,28.16 43.609,65.592 43.594,105.4c-0.034,82.149 -66.866,148.983 -148.983,148.984Zm81.721,-111.581c-4.479,-2.242 -26.499,-13.075 -30.604,-14.571c-4.105,-1.495 -7.091,-2.241 -10.077,2.241c-2.986,4.483 -11.569,14.572 -14.182,17.562c-2.612,2.988 -5.225,3.364 -9.703,1.12c-4.479,-2.241 -18.91,-6.97 -36.017,-22.23c-13.314,-11.876 -22.304,-26.542 -24.916,-31.026c-2.612,-4.484 -0.279,-6.908 1.963,-9.14c2.016,-2.007 4.48,-5.232 6.719,-7.847c2.24,-2.615 2.986,-4.484 4.479,-7.472c1.493,-2.99 0.747,-5.604 -0.374,-7.846c-1.119,-2.241 -10.077,-24.288 -13.809,-33.256c-3.635,-8.733 -7.327,-7.55 -10.077,-7.688c-2.609,-0.13 -5.598,-0.158 -8.583,-0.158c-2.986,0 -7.839,1.121 -11.944,5.604c-4.105,4.484 -15.675,15.32 -15.675,37.364c0,22.046 16.048,43.342 18.287,46.332c2.24,2.99 31.582,48.227 76.511,67.627c10.685,4.615 19.028,7.371 25.533,9.434c10.728,3.41 20.492,2.929 28.209,1.775c8.605,-1.285 26.499,-10.833 30.231,-21.295c3.732,-10.464 3.732,-19.431 2.612,-21.298c-1.119,-1.869 -4.105,-2.99 -8.583,-5.232Z" />
-            </svg>
-        </a>
-    </li>
-    <li>
-        <a target="_blank" rel="noopener noreferrer" aria-label="share Kernel Memory Dump Analysis : Introduction on telegram"
-            href="https://telegram.me/share/url?text=Kernel%20Memory%20Dump%20Analysis%20%3a%20Introduction&amp;url=http%3a%2f%2flocalhost%3a1313%2fposts%2fdumpanalysis%2f">
-            <svg version="1.1" xml:space="preserve" viewBox="2 2 28 28" height="30px" width="30px" fill="currentColor">
-                <path
-                    d="M26.49,29.86H5.5a3.37,3.37,0,0,1-2.47-1,3.35,3.35,0,0,1-1-2.47V5.48A3.36,3.36,0,0,1,3,3,3.37,3.37,0,0,1,5.5,2h21A3.38,3.38,0,0,1,29,3a3.36,3.36,0,0,1,1,2.46V26.37a3.35,3.35,0,0,1-1,2.47A3.38,3.38,0,0,1,26.49,29.86Zm-5.38-6.71a.79.79,0,0,0,.85-.66L24.73,9.24a.55.55,0,0,0-.18-.46.62.62,0,0,0-.41-.17q-.08,0-16.53,6.11a.59.59,0,0,0-.41.59.57.57,0,0,0,.43.52l4,1.24,1.61,4.83a.62.62,0,0,0,.63.43.56.56,0,0,0,.4-.17L16.54,20l4.09,3A.9.9,0,0,0,21.11,23.15ZM13.8,20.71l-1.21-4q8.72-5.55,8.78-5.55c.15,0,.23,0,.23.16a.18.18,0,0,1,0,.06s-2.51,2.3-7.52,6.8Z" />
-            </svg>
-        </a>
-    </li>
-    <li>
-        <a target="_blank" rel="noopener noreferrer" aria-label="share Kernel Memory Dump Analysis : Introduction on ycombinator"
-            href="https://news.ycombinator.com/submitlink?t=Kernel%20Memory%20Dump%20Analysis%20%3a%20Introduction&u=http%3a%2f%2flocalhost%3a1313%2fposts%2fdumpanalysis%2f">
-            <svg version="1.1" xml:space="preserve" width="30px" height="30px" viewBox="0 0 512 512" fill="currentColor"
-                xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape">
-                <path
-                    d="M449.446 0C483.971 0 512 28.03 512 62.554L512 449.446C512 483.97 483.97 512 449.446 512L62.554 512C28.03 512 0 483.97 0 449.446L0 62.554C0 28.03 28.029 0 62.554 0L449.446 0ZM183.8767 87.9921H121.8427L230.6673 292.4508V424.0079H281.3328V292.4508L390.1575 87.9921H328.1233L256 238.2489z" />
-            </svg>
-        </a>
-    </li>
-</ul>
+        </div><footer class="container">
+    <hr class="soften">
+    <p>
+&copy; 
 
-  </footer>
-</article>
-    </main>
     
-<footer class="footer">
-        <span>&copy; 2025 <a href="http://localhost:1313/">shark.exe</a></span> · 
 
-    <span>
-        Powered by
-        <a href="https://gohugo.io/" rel="noopener noreferrer" target="_blank">Hugo</a> &
-        <a href="https://github.com/adityatelange/hugo-PaperMod/" rel="noopener" target="_blank">PaperMod</a>
-    </span>
+<span id="thisyear">2026</span>
+
+
+</p>
+    <p class="text-center">
+        
+        
+        
+        
+        
+    </p>
 </footer>
-<a href="#top" aria-label="go to top" title="Go to Top (Alt + G)" class="top-link" id="top-link" accesskey="g">
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 6" fill="currentColor">
-        <path d="M12 6H0l6-6z" />
-    </svg>
-</a>
 
+</body><link rel="stylesheet" href="/css/bootstrap.css">
+<link rel="stylesheet" href="/css/bootstrap-responsive.css">
+<link rel="stylesheet" href="/css/style.css">
+
+<script src="/js/jquery.js"></script>
+<script src="/js/bootstrap-386.js"></script>
+<script src="/js/bootstrap-transition.js"></script>
+<script src="/js/bootstrap-alert.js"></script>
+<script src="/js/bootstrap-modal.js"></script>
+<script src="/js/bootstrap-dropdown.js"></script>
+<script src="/js/bootstrap-scrollspy.js"></script>
+<script src="/js/bootstrap-tab.js"></script>
+<script src="/js/bootstrap-tooltip.js"></script>
+<script src="/js/bootstrap-popover.js"></script>
+<script src="/js/bootstrap-button.js"></script>
+<script src="/js/bootstrap-collapse.js"></script>
+<script src="/js/bootstrap-carousel.js"></script>
+<script src="/js/bootstrap-typeahead.js"></script>
+<script src="/js/bootstrap-affix.js"></script>
 <script>
-    let menu = document.getElementById('menu')
-    if (menu) {
-        menu.scrollLeft = localStorage.getItem("menu-scroll-position");
-        menu.onscroll = function () {
-            localStorage.setItem("menu-scroll-position", menu.scrollLeft);
-        }
-    }
-
-    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-        anchor.addEventListener("click", function (e) {
-            e.preventDefault();
-            var id = this.getAttribute("href").substr(1);
-            if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView({
-                    behavior: "smooth"
-                });
-            } else {
-                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView();
-            }
-            if (id === "top") {
-                history.replaceState(null, null, " ");
-            } else {
-                history.pushState(null, null, `#${id}`);
-            }
-        });
-    });
-
-</script>
-<script>
-    var mybutton = document.getElementById("top-link");
-    window.onscroll = function () {
-        if (document.body.scrollTop > 800 || document.documentElement.scrollTop > 800) {
-            mybutton.style.visibility = "visible";
-            mybutton.style.opacity = "1";
-        } else {
-            mybutton.style.visibility = "hidden";
-            mybutton.style.opacity = "0";
-        }
+    _386 = { 
+        fastLoad: null ,
+        onePass: null , 
+        speedFactor: 10 
     };
 
+    
+    function ThisYear() {
+        document.getElementById('thisyear').innerHTML = new Date().getFullYear();
+    };
 </script>
-<script>
-    document.getElementById("theme-toggle").addEventListener("click", () => {
-        if (document.body.className.includes("dark")) {
-            document.body.classList.remove('dark');
-            localStorage.setItem("pref-theme", 'light');
-        } else {
-            document.body.classList.add('dark');
-            localStorage.setItem("pref-theme", 'dark');
-        }
-    })
-
-</script>
-<script>
-    document.querySelectorAll('pre > code').forEach((codeblock) => {
-        const container = codeblock.parentNode.parentNode;
-
-        const copybutton = document.createElement('button');
-        copybutton.classList.add('copy-code');
-        copybutton.innerHTML = 'copy';
-
-        function copyingDone() {
-            copybutton.innerHTML = 'copied!';
-            setTimeout(() => {
-                copybutton.innerHTML = 'copy';
-            }, 2000);
-        }
-
-        copybutton.addEventListener('click', (cb) => {
-            if ('clipboard' in navigator) {
-                navigator.clipboard.writeText(codeblock.textContent);
-                copyingDone();
-                return;
-            }
-
-            const range = document.createRange();
-            range.selectNodeContents(codeblock);
-            const selection = window.getSelection();
-            selection.removeAllRanges();
-            selection.addRange(range);
-            try {
-                document.execCommand('copy');
-                copyingDone();
-            } catch (e) { };
-            selection.removeRange(range);
-        });
-
-        if (container.classList.contains("highlight")) {
-            container.appendChild(copybutton);
-        } else if (container.parentNode.firstChild == container) {
-            
-        } else if (codeblock.parentNode.parentNode.parentNode.parentNode.parentNode.nodeName == "TABLE") {
-            
-            codeblock.parentNode.parentNode.parentNode.parentNode.parentNode.appendChild(copybutton);
-        } else {
-            
-            codeblock.parentNode.appendChild(copybutton);
-        }
-    });
-</script>
-</body>
-
 </html>

@@ -1,7 +1,7 @@
 baseURL = "https://shark-asmx.github.io/"
 languageCode = "en-us"
 title = "shark-asmx"
-theme = "hugo-PaperMod-Catpuccin"
+theme = "hugo.386"
 enableInlineShortcodes = true
 enableRobotsTXT = true
 buildDrafts = false
@@ -10,8 +10,8 @@ buildExpired = false
 enableEmoji = true
 pygmentsUseClasses = true
 mainsections = [ "posts" ]
-pagination.pagerSize = 10
- 
+pagination.pagerSize = 20
+
 
 [minify]
 disableXML = true
@@ -20,15 +20,15 @@ disableXML = true
 languageName = "English"
 weight = 1
 
-  [languages.en.taxonomies]
-  category = "categories"
-  tag = "tags"
-  series = "series"
+[languages.en.taxonomies]
+category = "categories"
+tag = "tags"
+series = "series"
 
-[[languages.en.menu.main]]
-name = "Tags"
-url = "/tags"
-weight = 10
+# [[languages.en.menu.main]]
+# name = "posts"
+# url = "/posts"
+# weight = 20
 
   [languages.en.params]
   languageAltTitle = "English"
@@ -51,6 +51,13 @@ weight = 10
 
 [params]
 env = "production"
+mainpagetitle = "hex codes"
+mainpagesubtitle = "shark blog"
+copyrightname = "shark-asmx"
+mainpagedesc = '''
+    ```tiny jar on my shelf, collecting strange ideas and random thoughts at /posts```
+'''
+loadspeedfactor = 10.0
 description = "shark-asmx's blog"
 author = "shark-asmx"
 defaultTheme = "auto"
@@ -65,7 +72,7 @@ ShowAllPagesInArchive = true
 ShowPageNums = true
 ShowToc = true
 theme = "dark"
-palette = "catpuccin"
+palette = "hugo.386"
 showThemeNotice = true
 showPostsSummary = true
 contentTypeName = "posts"
@@ -78,9 +85,9 @@ fullWidthTheme = false
   imageUrl = "#"
   imageTitle = "my image"
 
-    [[params.profileMode.buttons]]
-    name = "Tags"
-    url = "tags"
+    # [[params.profileMode.buttons]]
+    # name = "Tags"
+    # url = "tags"
 
   [params.homeInfoParams]
   Title = "Hii, I'm shark-asmx."
@@ -96,18 +103,13 @@ fullWidthTheme = false
   [[params.socialIcons]]
   name = "X"
   title = "Join me on Twitter"
-  url = "https://twitter.com/shark_asmx"
+  url = "https://twitter.com/shark-asmx"
 
   [[params.socialIcons]]
   name = "linkedin"
   title = "Join me on LinkedIn"
   url = "https://www.linkedin.com/in/sabhya05/"
 
-  [[params.socialIcons]]
-  name = "Mail"
-  iconSVG = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><path d="M30.56 8.47a8 8 0 0 0-7-7 64.29 64.29 0 0 0-15.06 0 8 8 0 0 0-7 7 64.29 64.29 0 0 0 0 15.06 8 8 0 0 0 7 7 64.29 64.29 0 0 0 15.06 0 8 8 0 0 0 7-7 64.29 64.29 0 0 0 0-15.06zm-8.69 8 6.76-7.09a63.05 63.05 0 0 1 0 13zM8.7 3.42a63.65 63.65 0 0 1 14.6 0A6 6 0 0 1 28.1 7l-9.53 10h-5.14L3.9 7a6 6 0 0 1 4.8-3.58zm-5.36 19a63.05 63.05 0 0 1 0-13l6.76 7.09zm20 6.21a63.65 63.65 0 0 1-14.6 0 6 6 0 0 1-4.94-3.92l7.75-6.78.77.81A1 1 0 0 0 13 19h6a1 1 0 0 0 .72-.31l.77-.81 7.75 6.78a6 6 0 0 1-4.94 3.92z" data-name="email android app aplication phone"/></svg>'
-  title = "Join me on Gmail"
-  url = "mailto:sabhrajmeh05@gmail.com"
 
   [params.assets]
   disableHLJS = true
@@ -123,3 +125,17 @@ disableInlineCSS = true
 
 [services.x]
 disableInlineCSS = true
+
+
+
+[menu]
+  [[menu.main]]
+    identifier = "posts"
+    name = "All posts"
+    url = "/posts/"       # The path can lead to a content folder too.
+    weight = 20
+
+    [[menu.main]]
+    name = "posts"
+    url = "/posts"
+    weight = 20

@@ -1,232 +1,47 @@
 <!DOCTYPE html>
-<html lang="en" dir="auto">
-
-<head><script src="/livereload.js?mindelay=10&amp;v=2&amp;port=1313&amp;path=livereload" data-no-instant defer></script><meta charset="utf-8">
-<meta http-equiv="X-UA-Compatible" content="IE=edge">
-<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<meta name="robots" content="index, follow">
-<title>Windows Objects: Structure, Headers, and Internal Mechanics | shark.exe</title>
-<meta name="keywords" content="Windows Internals, Kernel Objects, Debugging, Reverse Engineering">
-<meta name="description" content="A deep dive into Windows objects, focusing on their structure, headers, and relationships. This blog covers key components like _OBJECT_HEADER, OBJECT_TYPE, and ObTypeIndexTable, providing insights into how Windows organizes and references objects.">
-<meta name="author" content="5h4rrk">
-<link rel="canonical" href="http://localhost:1313/posts/windows-objects/">
-<link crossorigin="anonymous" href="/assets/css/stylesheet.180f19e094a50e5c790e9ddd948e1a18e5dc254c922bb069dceb5480237cf06c.css" integrity="sha256-GA8Z4JSlDlx5Dp3dlI4aGOXcJUySK7Bp3OtUgCN88Gw=" rel="preload stylesheet" as="style">
-<link rel="icon" href="http://localhost:1313/favicon.ico">
-<link rel="icon" type="image/png" sizes="16x16" href="http://localhost:1313/favicon-16x16.png">
-<link rel="icon" type="image/png" sizes="32x32" href="http://localhost:1313/favicon-32x32.png">
-<link rel="apple-touch-icon" href="http://localhost:1313/apple-touch-icon.png">
-<link rel="mask-icon" href="http://localhost:1313/safari-pinned-tab.svg">
-<meta name="theme-color" content="#2e2e33">
-<meta name="msapplication-TileColor" content="#2e2e33">
-<link rel="alternate" hreflang="en" href="http://localhost:1313/posts/windows-objects/">
-<noscript>
-    <style>
-        #theme-toggle,
-        .top-link {
-            display: none;
-        }
-
-    </style>
-    <style>
-        @media (prefers-color-scheme: dark) {
-            :root {
-                --theme: rgb(29, 30, 32);
-                --entry: rgb(46, 46, 51);
-                --primary: rgb(218, 218, 219);
-                --secondary: rgb(155, 156, 157);
-                --tertiary: rgb(65, 66, 68);
-                --content: rgb(196, 196, 197);
-                --code-block-bg: rgb(46, 46, 51);
-                --code-bg: rgb(55, 56, 62);
-                --border: rgb(51, 51, 51);
-            }
-
-            .list {
-                background: var(--theme);
-            }
-
-            .list:not(.dark)::-webkit-scrollbar-track {
-                background: 0 0;
-            }
-
-            .list:not(.dark)::-webkit-scrollbar-thumb {
-                border-color: var(--theme);
-            }
-        }
-
-    </style>
-</noscript><meta property="og:url" content="http://localhost:1313/posts/windows-objects/">
-  <meta property="og:site_name" content="shark.exe">
-  <meta property="og:title" content="Windows Objects: Structure, Headers, and Internal Mechanics">
-  <meta property="og:description" content="A deep dive into Windows objects, focusing on their structure, headers, and relationships. This blog covers key components like _OBJECT_HEADER, OBJECT_TYPE, and ObTypeIndexTable, providing insights into how Windows organizes and references objects.">
-  <meta property="og:locale" content="en">
-  <meta property="og:type" content="article">
-    <meta property="article:section" content="posts">
-    <meta property="article:published_time" content="2025-03-12T08:23:06+05:30">
-    <meta property="article:modified_time" content="2025-03-12T08:23:06+05:30">
-    <meta property="article:tag" content="Windows Internals">
-    <meta property="article:tag" content="Kernel Objects">
-    <meta property="article:tag" content="Debugging">
-    <meta property="article:tag" content="Reverse Engineering">
-<meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="Windows Objects: Structure, Headers, and Internal Mechanics">
-<meta name="twitter:description" content="A deep dive into Windows objects, focusing on their structure, headers, and relationships. This blog covers key components like _OBJECT_HEADER, OBJECT_TYPE, and ObTypeIndexTable, providing insights into how Windows organizes and references objects.">
-
-
-<script type="application/ld+json">
-{
-  "@context": "https://schema.org",
-  "@type": "BreadcrumbList",
-  "itemListElement": [
-    {
-      "@type": "ListItem",
-      "position":  1 ,
-      "name": "Posts",
-      "item": "http://localhost:1313/posts/"
-    }, 
-    {
-      "@type": "ListItem",
-      "position":  2 ,
-      "name": "Windows Objects: Structure, Headers, and Internal Mechanics",
-      "item": "http://localhost:1313/posts/windows-objects/"
-    }
-  ]
-}
-</script>
-<script type="application/ld+json">
-{
-  "@context": "https://schema.org",
-  "@type": "BlogPosting",
-  "headline": "Windows Objects: Structure, Headers, and Internal Mechanics",
-  "name": "Windows Objects: Structure, Headers, and Internal Mechanics",
-  "description": "A deep dive into Windows objects, focusing on their structure, headers, and relationships. This blog covers key components like _OBJECT_HEADER, OBJECT_TYPE, and ObTypeIndexTable, providing insights into how Windows organizes and references objects.",
-  "keywords": [
-    "Windows Internals", "Kernel Objects", "Debugging", "Reverse Engineering"
-  ],
-  "articleBody": "Windows Pool Windows Pool is memory allocated in kernel mode for core system components like drivers, can operate their activities. There are\nPaged Pool: stays temporarily in memory. It would be paged out to disk when system memory runs out of memory. When it needs, it pulls it back to memory.\nNon Paged Pool: stays permanent in memory. It would be reserved for critical kernel objects or drivers that system cannot afford to page out.\nObjects Kernel Objects are fundamental components managed by Object Manager.\nRepresents physical and logical resources like processes, threads, files, devices and so on.\nEvery Object has general structure in a pool page.\nIt has\nPool Header Optional Object Header -\u003e there can be mulitple Optional object headers Object header Object Body +---------------------+ +---------------+ | PsActiveProcessHead | -----------------------\u003e | _EPROCESS | +---------------------+ +---------------+ ^ | v +------------+ | _EPROCESS | +------------+ ^ | v +------------+ | _EPROCESS | +------------+ . . . Pool Object Representation +-------------------------+ | Pool Header | \u003c---- Contains metadata for pool (e.g., size, type) +-------------------------+ | Optional Object Header | \u003c---- Contains additional headers +-------------------------+ | Object Header | \u003c---- Key fields: Object Type, Object Size, Reference Count +-------------------------+ | Object Body | \u003c---- Actual data; varies depending on the object type | (Process, Thread, etc) | (e.g., \"Proc\" for processes, \"Thre\" for threads, \"File\" for files) +-------------------------+ Inspecting cmd.exe 0: kd\u003e !process 0 0 cmd.exe PROCESS SessionId: 1 Cid: 1164 Peb: 72ce659000 ParentCid: 1148 DirBase: 5e2bc002 ObjectTable: ffff99011473e500 HandleCount: 245. Image: cmd.exe 0: kd\u003e dt nt!_EPROCESS ffffc509bf28b080 -y Image +0x464 ImageNotifyDone : 0y1 +0x5a0 ImageFilePointer : 0xffffc509`c095e2b0 _FILE_OBJECT +0x5a8 ImageFileName : [15] \"cmd.exe\" +0x5f4 ImagePathHash : 0xbd30981 0: kd\u003e !object ffffc509bf28b080 Object: ffffc509bf28b080 Type: (ffffc509b88ab900) Process ObjectHeader: ffffc509bf28b050 (new version) HandleCount: 7 PointerCount: 261732 There are 7 active handles. PointerCount is a very large that represents the total number of objects referenced till time. Open Handles\n0: kd\u003e !findhandle ffffc509bf28b080 [ffffc509b8884040 System] 18ac: Entry ffff99010d4662b0 Granted Access 102a (Protected) (Audit) 2ab4: Entry ffff990112b41ad0 Granted Access 1fffff (Protected) (Audit) 2c98: Entry ffff9901137fe260 Granted Access 102a (Protected) (Audit) [ffffc509bc16f080 csrss.exe] 3a0: Entry ffff99010b5fce80 Granted Access 1fffff (Protected) (Audit) [ffffc509bd20d140 lsass.exe] 1214: Entry ffff990112379850 Granted Access 1478 (Protected) (Audit) [ffffc509bd415300 svchost.exe] 2768: Entry ffff9901139c2da0 Granted Access 1478 (Protected) (Audit) [ffffc509c0ed2080 conhost.exe] 120: Entry ffff990112455480 Granted Access 1fffff (Protected) (Audit) 0: kd\u003e !trueref ffffc509bf28b080 ffffc509bf28b080: HandleCount: 7 PointerCount: 261732 RealPointerCount: 153 HandleCount represents objects are accessed using a handle, which is standard way of accessing resources in windows.\nReal Pointer Count, another way to access the kernel object is through pointers, done in kernel mode.\nOBJECT_HEADER 0: kd\u003e dt nt!_OBJECT_HEADER +0x000 PointerCount : Int8B +0x008 HandleCount : Int8B +0x008 NextToFree : Ptr64 Void +0x010 Lock : _EX_PUSH_LOCK +0x018 TypeIndex : UChar +0x019 TraceFlags : UChar +0x019 DbgRefTrace : Pos 0, 1 Bit +0x019 DbgTracePermanent : Pos 1, 1 Bit +0x01a InfoMask : UChar +0x01b Flags : UChar +0x01b NewObject : Pos 0, 1 Bit +0x01b KernelObject : Pos 1, 1 Bit +0x01b KernelOnlyAccess : Pos 2, 1 Bit +0x01b ExclusiveObject : Pos 3, 1 Bit +0x01b PermanentObject : Pos 4, 1 Bit +0x01b DefaultSecurityQuota : Pos 5, 1 Bit +0x01b SingleHandleEntry : Pos 6, 1 Bit +0x01b DeletedInline : Pos 7, 1 Bit +0x01c Reserved : Uint4B +0x020 ObjectCreateInfo : Ptr64 _OBJECT_CREATE_INFORMATION +0x020 QuotaBlockCharged : Ptr64 Void +0x028 SecurityDescriptor : Ptr64 Void +0x030 Body : _QUAD 0: kd\u003e dt nt!_QUAD +0x000 UseThisFieldToCopy : Int8B +0x000 DoNotUseThisField : Float 0: kd\u003e ?? sizeof(_OBJECT_HEADER) unsigned int64 0x38 The Body field is of type QUAD, which overlaps with the actual object’s data. So, subtract 0x8 from 0x38.\nIn a 64-bit architecture,_OBJECT_HEADER structure size is 0x30 bytes. To obtain the starting address of OBJECT_HEADER from OBJECT_BODY address, simply subtract 0x30 bytes from OBJECT_BODY address.\n0: kd\u003e dt nt!_OBJECT_HEADER ffffc509bf28b080-30 +0x000 PointerCount : 0n261732 +0x008 HandleCount : 0n7 +0x008 NextToFree : 0x00000000`00000007 Void +0x010 Lock : _EX_PUSH_LOCK +0x018 TypeIndex : 0xc '' +0x019 TraceFlags : 0 '' +0x019 DbgRefTrace : 0y0 +0x019 DbgTracePermanent : 0y0 +0x01a InfoMask : 0x88 '' +0x01b Flags : 0 '' +0x01b NewObject : 0y0 +0x01b KernelObject : 0y0 +0x01b KernelOnlyAccess : 0y0 +0x01b ExclusiveObject : 0y0 +0x01b PermanentObject : 0y0 +0x01b DefaultSecurityQuota : 0y0 +0x01b SingleHandleEntry : 0y0 +0x01b DeletedInline : 0y0 +0x01c Reserved : 0x7ffe +0x020 ObjectCreateInfo : 0xffffc509`bae86cc0 _OBJECT_CREATE_INFORMATION +0x020 QuotaBlockCharged : 0xffffc509`bae86cc0 Void +0x028 SecurityDescriptor : 0xffff9901`11fa936e Void +0x030 Body : _QUAD InfoMask is 0x88.\nTraceFlags is an union of DbgRefTrace (0th bit) and DbgTracePermanent(1st bit). When the DbgRefTrace flag is set, it enables the tracking of reference count changes for the associated object. This allows developers and system administrators to monitor how many references exist to a particular object.\nPermanentObject = 0, which means the process would be deleted once PointerCount and HandleCount reaches to 0. If PermanentObject=1, the object won’t be deleted the count drops to 0.\nObjectCreateInfo is a strucutre of _OBJECT_CREATE_INFORMATION, which maintains information about Process Creation Attributes, Namespace where it is created, Charged Paged (amount of memory allocated from the paged pool that is currently in use by the system), Non-Paged Pool and so on\nIn the older version of Windows, _OBJECT_HEADER-\u003eType used to point to OBJECT_TYPE.\nFrom Windows 7 onwards, it changed to 8 bit value and stored at _OBJECT_HEADER-\u003eTypeIndex. It points to index to a data structure nt!ObTypeIndexTable, which is an array of pointers of _OBJECT_TYPE.\nOBJECT_HEADER Flags #define OB_FLAG_NEW_OBJECT 0x01 // NewObject (New Object Created, not exists in Pool) #define OB_FLAG_KERNEL_OBJECT 0x02 // KernelObject (Object can only have Kernel handles) #define OB_FLAG_CREATOR_INFO 0x04 // KernelOnlyAccess (Kernel can only open \u0026 access handles) #define OB_FLAG_EXCLUSIVE_OBJECT 0x08 // ExclusiveObject (Process who created can only open \u0026 access it) #define OB_FLAG_PERMANENT_OBJECT 0x10 // PermanentObject (Persits even HandleCount \u0026 PointerCount drops to 0) #define OB_FLAG_DEFAULT_SECURITY_QUOTA 0x20 // DefaultSecurityQuota (defines SecurityDescriptor) #define OB_FLAG_SINGLE_HANDLE_ENTRY 0x40 // SingleHandleEntry (Only contains one entry OBJECT_HEADER_HANDLE_INFO ) #define OB_FLAG_DELETED_INLINE 0x80 // DeletedInline (Object in queue for deletion) Optional ObjectHeader Optional Object Header (ObpInfoMaskToOffset) _OBJECT_HEADER_CREATOR_INFO 0 = 0x1 _OBJECT_HEADER_NAME_INFO InfoMask \u0026 0x3 = 0x2 _OBJECT_HEADER_HANDLE_INFO InfoMask \u0026 0x7 = 0x4 _OBJECT_HEADER_QUOTA_INFO InfoMask \u0026 0xF = 0x8 _OBJECT_HEADER_PROCESS_INFO InfoMask \u0026 0x1F = 0x10 _OBJECT_HEADER_AUDIT_INFO InfoMask \u0026 0x3F = 0x20 _OBJECT_HEADER_EXTENDED_INFO InfoMask \u0026 0x7F = 0x40 _OBJECT_HEADER_PADDING_INFO InfoMask \u0026 0xFF = 0x80 InfoMask : 0x88 -\u003e _OBJECT_HEADER_QUOTA_INFO\nDecoding InfoMask\nCorresponding ResultBit for _OBJECT_HEADER_QUOTA_INFO is 0x08. Subtract ResultBit from InfoMask i.e. InfoMask - ResultBit = 0x88 - 0x8 = 0x80 After subtraction, it points to the next Optional Header. Again, Update the InfoMask Value and Calculate it. It will give _OBJECT_HEADER_PADDING_INFO InfoMask = 0x88 OptionalHeaders = [\"_OBJECT_HEADER_CREATOR_INFO\", \"_OBJECT_HEADER_NAME_INFO\", \"_OBJECT_HEADER_HANDLE_INFO\", \"_OBJECT_HEADER_QUOTA_INFO\", \"_OBJECT_HEADER_PROCESS_INFO\", \"_OBJECT_HEADER_AUDIT_INFO\", \"_OBJECT_HEADER_EXTENDED_INFO\", \"_OBJECT_HEADER_PADDING_INFO\"] MaskBit = [0x0, 0x03, 0x07, 0x0F, 0x1F, 0x3F, 0x7F, 0xFF] ResultBit = [0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80] while InfoMask != 0: for _ in range(len(OptionalHeaders)): if(ResultBit[_] == MaskBit[_] \u0026 InfoMask): print(OptionalHeaders[_]) InfoMask -= ResultBit[_] # Output: #_OBJECT_HEADER_QUOTA_INFO #_OBJECT_HEADER_PADDING_INFO 0: kd\u003e db ffffc509bf28b080-80 ffffc509`bf28b000 00 00 d0 02 50 72 6f 63-00 00 00 00 00 00 00 00 ....Proc........ ffffc509`bf28b010 01 00 00 00 00 00 00 00-8e 01 00 00 00 00 00 00 ................ ffffc509`bf28b020 00 00 00 00 00 00 00 00-01 30 53 5e 20 00 00 00 .........0S^ ... ffffc509`bf28b030 00 10 00 00 48 0c 00 00-78 00 00 00 fe 7f 00 00 ....H...x....... ffffc509`bf28b040 c0 6c e8 ba 09 c5 ff ff-00 e0 05 5e fe 7f 00 00 .l.........^.... ffffc509`bf28b050 64 fe 03 00 00 00 00 00-07 00 00 00 00 00 00 00 d............... ffffc509`bf28b060 00 00 00 00 00 00 00 00-0c 00 88 00 fe 7f 00 00 ................ ffffc509`bf28b070 c0 6c e8 ba 09 c5 ff ff-6e 93 fa 11 01 99 ff ff .l......n....... 0: kd\u003e dt ntkrnlmp!_OBJECT_HEADER_* ntkrnlmp!_OBJECT_HEADER_QUOTA_INFO ntkrnlmp!_OBJECT_HEADER_PROCESS_INFO ntkrnlmp!_OBJECT_HEADER_HANDLE_INFO ntkrnlmp!_OBJECT_HEADER_NAME_INFO ntkrnlmp!_OBJECT_HEADER_CREATOR_INFO ntkrnlmp!_OBJECT_HEADER_AUDIT_INFO ntkrnlmp!_OBJECT_HEADER_EXTENDED_INFO ntkrnlmp!_OBJECT_HEADER_PADDING_INFO // OBJECT_BODY - OBJECT_HEADER_SIZE - _OBJECT_HEADER_QUOTA_INFO_SIZE 0: kd\u003e ? ffffc509bf28b080-30-20 Evaluate expression: -64829324218320 = ffffc509`bf28b030 0: kd\u003e dt nt!_OBJECT_HEADER_QUOTA_INFO ffffc509`bf28b050-20 +0x000 PagedPoolCharge : 0x1000 +0x004 NonPagedPoolCharge : 0xc48 +0x008 SecurityDescriptorCharge : 0x78 +0x00c Reserved1 : 0x7ffe +0x010 SecurityDescriptorQuotaBlock : 0xffffc509`bae86cc0 Void +0x018 Reserved2 : 0x00007ffe`5e05e000 Objects are always created with headers attached to the object body. However, the number of headers depends entirely on how the object is created. In Kernel, Windows maintains an array of all possible combinations of headers and stores the value in ObpInfoMaskToOffset. Just say, I used _OBJECT_HEADER_QUOTA_INFO, then size would be 0x20. If I used two different headers, then InfoMask value would be sum of size of both headers result bit.\nLocating OBJECT_HEADER The Optional Headers would appear before main OBJECT_HEADER and corresponding OptionalHeader result bit value would be stored in InfoMask.\n// ObpInfoMaskToOffset + ResultBit Value of QUOTA_INFO 0: kd\u003e db ObpInfoMaskToOffset + 0x8 L1 fffff807`1ec3de28 20 Subtract it from _OBJECT_HEADER - _OBJECT_HEADER_QUOTA_INFO 0: kd\u003e dt nt!_OBJECT_HEADER_QUOTA_INFO ffffc509`bf28b050-20 +0x000 PagedPoolCharge : 0x1000 +0x004 NonPagedPoolCharge : 0xc48 +0x008 SecurityDescriptorCharge : 0x78 +0x00c Reserved1 : 0x7ffe +0x010 SecurityDescriptorQuotaBlock : 0xffffc509`bae86cc0 Void +0x018 Reserved2 : 0x00007ffe`5e05e000 When system opens any handles, it consumes system resources, and this keeps track of those for that given Object. Optional Object Header Structures 0: kd\u003e dt ntkrnlmp!_OBJECT_HEADER_PROCESS_INFO +0x000 ExclusiveProcess : Ptr64 _EPROCESS +0x008 Reserved : Uint8B 0: kd\u003e dt ntkrnlmp!_OBJECT_HEADER_HANDLE_INFO +0x000 HandleCountDataBase : Ptr64 _OBJECT_HANDLE_COUNT_DATABASE +0x000 SingleEntry : _OBJECT_HANDLE_COUNT_ENTRY 0: kd\u003e dt nt!_OBJECT_HANDLE_COUNT_DATABASE +0x000 CountEntries : Uint4B +0x008 HandleCountEntries : [1] _OBJECT_HANDLE_COUNT_ENTRY 0: kd\u003e dt nt!_OBJECT_HANDLE_COUNT_ENTRY +0x000 Process : Ptr64 _EPROCESS +0x008 HandleCount : Pos 0, 24 Bits +0x008 LockCount : Pos 24, 8 Bits Has entries of handles for per process 0: kd\u003e dt ntkrnlmp!_OBJECT_HEADER_NAME_INFO +0x000 Directory : Ptr64 _OBJECT_DIRECTORY +0x008 Name : _UNICODE_STRING +0x018 ReferenceCount : Int4B +0x01c Reserved : Uint4B Has Object name which makes it visible to other objects 0: kd\u003e dt ntkrnlmp!_OBJECT_HEADER_CREATOR_INFO +0x000 TypeList : _LIST_ENTRY +0x010 CreatorUniqueProcess : Ptr64 Void +0x018 CreatorBackTraceIndex : Uint2B +0x01a Reserved1 : Uint2B +0x01c Reserved2 : Uint4B Links same-type objects, tracks creating process, and captures backtrace. 0: kd\u003e dt ntkrnlmp!_OBJECT_HEADER_AUDIT_INFO +0x000 SecurityDescriptor : Ptr64 Void +0x008 Reserved : Uint8B Has a pointer to Security Descriptor which was used while creating an Object. Used for File Objects to track audit. 0: kd\u003e dt ntkrnlmp!_OBJECT_HEADER_EXTENDED_INFO +0x000 Footer : Ptr64 _OBJECT_FOOTER +0x008 Reserved : Uint8B Has a pointer to _OBJECT_FOOTER 0: kd\u003e dt ntkrnlmp!_OBJECT_HEADER_PADDING_INFO +0x000 PaddingAmount : Uint4B - It’s just for alignment of object body. OBJECT_HEADER TypeIndex In older versions of Windows,Type field used to point to _OBJECT_TYPE structure. Starting with Windows 7, TypeIndex field is introduced, which stores an encoded value. When decoded, it provides an index that is used to locate _OBJECT_TYPE structure within ObTypeIndexTable array.\nNow, Let’s look into TypeIndex\n0: kd\u003e dt nt!_OBJECT_HEADER ffffc509bf28b080-30 +0x000 PointerCount : 0n261732 +0x008 HandleCount : 0n7 +0x008 NextToFree : 0x00000000`00000007 Void +0x010 Lock : _EX_PUSH_LOCK +0x018 TypeIndex : 0xc '' +0x019 TraceFlags : 0 '' +0x019 DbgRefTrace : 0y0 +0x019 DbgTracePermanent : 0y0 +0x01a InfoMask : 0x88 '' +0x01b Flags : 0 '' .... .... TypeIndex : 0x0c\n0: kd\u003e x nt!ObTypeIndexTable fffff807`1ed14e80 nt!ObTypeIndexTable = ",
-  "wordCount" : "2997",
-  "inLanguage": "en",
-  "datePublished": "2025-03-12T08:23:06+05:30",
-  "dateModified": "2025-03-12T08:23:06+05:30",
-  "author":{
-    "@type": "Person",
-    "name": "5h4rrk"
-  },
-  "mainEntityOfPage": {
-    "@type": "WebPage",
-    "@id": "http://localhost:1313/posts/windows-objects/"
-  },
-  "publisher": {
-    "@type": "Organization",
-    "name": "shark.exe",
-    "logo": {
-      "@type": "ImageObject",
-      "url": "http://localhost:1313/favicon.ico"
-    }
-  }
-}
-</script>
+<html lang="en"><head><script src="/livereload.js?mindelay=10&amp;v=2&amp;port=1313&amp;path=livereload" data-no-instant defer></script>
+    <title>shark-asmx</title>
+    <meta content="text/html;charset=utf-8" http-equiv="Content-Type">
+    <meta content="utf-8" http-equiv="encoding">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="format-detection" content="telephone=no" />
+    <meta name="theme-color" content="#000084" />
+    <link rel="icon" href="http://localhost:1313//favicon.ico">
+    <link rel="canonical" href="http://localhost:1313/">
+    
+    
 </head>
-
-<body class="" id="top">
-<script>
-    if (localStorage.getItem("pref-theme") === "dark") {
-        document.body.classList.add('dark');
-    } else if (localStorage.getItem("pref-theme") === "light") {
-        document.body.classList.remove('dark')
-    } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
-        document.body.classList.add('dark');
-    }
-
-</script>
-
-<header class="header">
-    <nav class="nav">
-        <div class="logo">
-            <a href="http://localhost:1313/" accesskey="h" title="shark.exe (Alt + H)">shark.exe</a>
-            <div class="logo-switches">
-                <button id="theme-toggle" accesskey="t" title="(Alt + T)" aria-label="Toggle theme">
-                    <svg id="moon" xmlns="http://www.w3.org/2000/svg" width="24" height="18" viewBox="0 0 24 24"
-                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                        stroke-linejoin="round">
-                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
-                    </svg>
-                    <svg id="sun" xmlns="http://www.w3.org/2000/svg" width="24" height="18" viewBox="0 0 24 24"
-                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                        stroke-linejoin="round">
-                        <circle cx="12" cy="12" r="5"></circle>
-                        <line x1="12" y1="1" x2="12" y2="3"></line>
-                        <line x1="12" y1="21" x2="12" y2="23"></line>
-                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
-                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
-                        <line x1="1" y1="12" x2="3" y2="12"></line>
-                        <line x1="21" y1="12" x2="23" y2="12"></line>
-                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
-                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
-                    </svg>
-                </button>
+<body>
+<nav class="navbar navbar-inverse navbar-fixed-top">
+    <div class="navbar-inner">
+        <div class="container">
+            <button type="button" class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse"></button>
+            <a class="brand" href="http://localhost:1313/">shark-asmx</a>
+            <div class="nav-collapse collapse">
+                <ul class="nav">
+                    
+                    
+                        
+                            <li>
+                                <a href="/posts">
+                                    
+                                    <span>posts</span>
+                                </a>
+                            </li>
+                        
+                    
+                </ul>
             </div>
         </div>
-        <ul id="menu">
-            <li>
-                <a href="http://localhost:1313/tags" title="Tags">
-                    <span>Tags</span>
-                </a>
-            </li>
-        </ul>
-    </nav>
-</header>
-<main class="main">
+    </div>
+</nav><div id="content" class="container">
 
-<article class="post-single">
-  <header class="post-header">
-    <div class="breadcrumbs"><a href="http://localhost:1313/">Home</a>&nbsp;»&nbsp;<a href="http://localhost:1313/posts/">Posts</a></div>
-    <h1 class="post-title entry-hint-parent">
-      Windows Objects: Structure, Headers, and Internal Mechanics
-    </h1>
-    <div class="post-meta"><span title='2025-03-12 08:23:06 +0530 IST'>March 12, 2025</span>&nbsp;·&nbsp;15 min&nbsp;·&nbsp;5h4rrk
-
-</div>
-  </header> <div class="toc">
-    <details >
-        <summary accesskey="c" title="(Alt + C)">
-            <span class="details">Table of Contents</span>
-        </summary>
-
-        <div class="inner"><ul>
-                <li>
-                    <a href="#windows-pool" aria-label="Windows Pool">Windows Pool</a></li>
-                <li>
-                    <a href="#objects" aria-label="Objects">Objects</a></li>
-                <li>
-                    <a href="#inspecting-cmdexe" aria-label="Inspecting cmd.exe">Inspecting cmd.exe</a><ul>
-                        
-                <li>
-                    <a href="#object_header" aria-label="OBJECT_HEADER">OBJECT_HEADER</a></li>
-                <li>
-                    <a href="#object_header-flags" aria-label="OBJECT_HEADER Flags">OBJECT_HEADER Flags</a></li>
-                <li>
-                    <a href="#optional-objectheader" aria-label="Optional ObjectHeader">Optional ObjectHeader</a></li>
-                <li>
-                    <a href="#locating-object_header" aria-label="Locating OBJECT_HEADER">Locating OBJECT_HEADER</a></li>
-                <li>
-                    <a href="#optional-object-header-structures" aria-label="Optional Object Header Structures">Optional Object Header Structures</a></li>
-                <li>
-                    <a href="#object_header-typeindex" aria-label="OBJECT_HEADER TypeIndex">OBJECT_HEADER TypeIndex</a></li>
-                <li>
-                    <a href="#obgetobjecttype" aria-label="ObGetObjectType">ObGetObjectType</a></li></ul>
-                </li>
-                <li>
-                    <a href="#inspecting-notepadexe" aria-label="Inspecting Notepad.exe">Inspecting Notepad.exe</a></li>
-                <li>
-                    <a href="#inspecting-csrssexe" aria-label="Inspecting csrss.exe">Inspecting csrss.exe</a>
-                </li>
-            </ul>
-        </div>
-    </details>
-</div>
-
-  <div class="post-content"><h4 id="windows-pool">Windows Pool<a hidden class="anchor" aria-hidden="true" href="#windows-pool">#</a></h4>
+<div class="row-fluid navmargin">
+    <div class="page-header">
+        <h1>Windows Objects: Structure, Headers, and Internal Mechanics - Wed, Mar 12, 2025</h1>
+    </div>
+    <p class="lead"></p>
+    <h4 id="windows-pool">Windows Pool</h4>
 <p>Windows Pool is memory allocated in kernel mode for core system components like drivers, can operate their activities. There are</p>
 <ul>
 <li>
@@ -236,7 +51,7 @@
 <p><strong>Non Paged Pool</strong>: stays permanent in memory. It would be reserved for critical kernel objects or drivers that system cannot afford to page out.</p>
 </li>
 </ul>
-<h4 id="objects">Objects<a hidden class="anchor" aria-hidden="true" href="#objects">#</a></h4>
+<h4 id="objects">Objects</h4>
 <ul>
 <li>
 <p>Kernel Objects are fundamental components managed by Object Manager.</p>
@@ -289,7 +104,7 @@
 </span></span><span class="line"><span class="cl">    <span class="p">|</span>  <span class="o">(</span>Process, Thread, etc<span class="o">)</span> <span class="p">|</span>         <span class="o">(</span>e.g., <span class="s2">&#34;Proc&#34;</span> <span class="k">for</span> processes, <span class="s2">&#34;Thre&#34;</span> <span class="k">for</span> threads, <span class="s2">&#34;File&#34;</span> <span class="k">for</span> files<span class="o">)</span>
 </span></span><span class="line"><span class="cl">    +-------------------------+
 </span></span><span class="line"><span class="cl">    
-</span></span></code></pre></div><h4 id="inspecting-cmdexe">Inspecting cmd.exe<a hidden class="anchor" aria-hidden="true" href="#inspecting-cmdexe">#</a></h4>
+</span></span></code></pre></div><h4 id="inspecting-cmdexe">Inspecting cmd.exe</h4>
 <div class="highlight"><pre tabindex="0" class="chroma"><code class="language-rs" data-lang="rs"><span class="line"><span class="cl"><span class="mi">0</span>: <span class="nc">kd</span><span class="o">&gt;</span><span class="w"> </span><span class="o">!</span><span class="n">process</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="n">cmd</span><span class="p">.</span><span class="n">exe</span><span class="w">
 </span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="no">PROCESS</span><span class="w"> 	
 </span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">SessionId</span>: <span class="mi">1</span><span class="w">  </span><span class="n">Cid</span>: <span class="mi">1164</span><span class="w">    </span><span class="n">Peb</span>: <span class="mi">72</span><span class="n">ce659000</span><span class="w">  </span><span class="n">ParentCid</span>: <span class="mi">1148</span><span class="w">
@@ -338,7 +153,7 @@
 <p><strong>Real Pointer Count</strong>, another way to access the kernel object is through <strong>pointers</strong>, done in kernel mode.</p>
 </li>
 </ul>
-<h5 id="object_header">OBJECT_HEADER<a hidden class="anchor" aria-hidden="true" href="#object_header">#</a></h5>
+<h5 id="object_header">OBJECT_HEADER</h5>
 <div class="highlight"><pre tabindex="0" class="chroma"><code class="language-rs" data-lang="rs"><span class="line"><span class="cl"><span class="mi">0</span>: <span class="nc">kd</span><span class="o">&gt;</span><span class="w"> </span><span class="n">dt</span><span class="w"> </span><span class="n">nt</span><span class="o">!</span><span class="no">_OBJECT_HEADER</span><span class="w">
 </span></span></span><span class="line"><span class="cl"><span class="w">   </span><span class="o">+</span><span class="mh">0x000</span><span class="w"> </span><span class="n">PointerCount</span><span class="w">     </span>: <span class="nc">Int8B</span><span class="w">
 </span></span></span><span class="line"><span class="cl"><span class="w">   </span><span class="o">+</span><span class="mh">0x008</span><span class="w"> </span><span class="n">HandleCount</span><span class="w">      </span>: <span class="nc">Int8B</span><span class="w">
@@ -416,7 +231,7 @@
 <p>From Windows 7 onwards, it changed to 8 bit value and stored at <code>_OBJECT_HEADER-&gt;TypeIndex</code>. It points to index to a data structure <code>nt!ObTypeIndexTable</code>, which is an array of pointers of <code>_OBJECT_TYPE</code>.</p>
 </li>
 </ul>
-<h5 id="object_header-flags">OBJECT_HEADER Flags<a hidden class="anchor" aria-hidden="true" href="#object_header-flags">#</a></h5>
+<h5 id="object_header-flags">OBJECT_HEADER Flags</h5>
 <div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="cp">#define OB_FLAG_NEW_OBJECT              0x01 </span><span class="c1">// NewObject (New Object Created, not exists in Pool)
 </span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="cp">#define OB_FLAG_KERNEL_OBJECT           0x02 </span><span class="c1">// KernelObject (Object can only have Kernel handles)
 </span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="cp">#define OB_FLAG_CREATOR_INFO            0x04 </span><span class="c1">// KernelOnlyAccess (Kernel can only open &amp; access handles)
@@ -425,7 +240,7 @@
 </span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="cp">#define OB_FLAG_DEFAULT_SECURITY_QUOTA  0x20 </span><span class="c1">// DefaultSecurityQuota (defines SecurityDescriptor)
 </span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="cp">#define OB_FLAG_SINGLE_HANDLE_ENTRY     0x40 </span><span class="c1">// SingleHandleEntry (Only contains one entry OBJECT_HEADER_HANDLE_INFO )
 </span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="cp">#define OB_FLAG_DELETED_INLINE          0x80 </span><span class="c1">// DeletedInline (Object in queue for deletion)
-</span></span></span></code></pre></div><h5 id="optional-objectheader">Optional ObjectHeader<a hidden class="anchor" aria-hidden="true" href="#optional-objectheader">#</a></h5>
+</span></span></span></code></pre></div><h5 id="optional-objectheader">Optional ObjectHeader</h5>
 <table>
   <thead>
       <tr>
@@ -524,7 +339,7 @@
 </span></span><span class="line"><span class="cl">   +0x010 SecurityDescriptorQuotaBlock : 0xffffc509<span class="sb">`</span>bae86cc0 Void
 </span></span><span class="line"><span class="cl">   +0x018 Reserved2        : 0x00007ffe<span class="sb">`</span>5e05e000
 </span></span></code></pre></div><p>Objects are always created with headers attached to the object body. However, the number of headers depends entirely on how the object is created. In Kernel, Windows maintains an array of all possible combinations of headers and stores the value in ObpInfoMaskToOffset. Just say, I used <code>_OBJECT_HEADER_QUOTA_INFO</code>, then size would be 0x20. If I used two different headers, then InfoMask value would be sum of size of both headers result bit.</p>
-<h5 id="locating-object_header">Locating OBJECT_HEADER<a hidden class="anchor" aria-hidden="true" href="#locating-object_header">#</a></h5>
+<h5 id="locating-object_header">Locating OBJECT_HEADER</h5>
 <p>The Optional Headers would appear before main OBJECT_HEADER and corresponding OptionalHeader result bit value would be stored in InfoMask.</p>
 <div class="highlight"><pre tabindex="0" class="chroma"><code class="language-rs" data-lang="rs"><span class="line"><span class="cl"><span class="c1">// ObpInfoMaskToOffset + ResultBit Value of QUOTA_INFO
 </span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="mi">0</span>: <span class="nc">kd</span><span class="o">&gt;</span><span class="w"> </span><span class="n">db</span><span class="w"> </span><span class="n">ObpInfoMaskToOffset</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mh">0x8</span><span class="w"> </span><span class="n">L1</span><span class="w">
@@ -542,7 +357,7 @@
 </span></span></span></code></pre></div><ul>
 <li>When system opens any handles, it consumes system resources, and this keeps track of those for that given Object.</li>
 </ul>
-<h5 id="optional-object-header-structures">Optional Object Header Structures<a hidden class="anchor" aria-hidden="true" href="#optional-object-header-structures">#</a></h5>
+<h5 id="optional-object-header-structures">Optional Object Header Structures</h5>
 <div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">0: kd&gt; dt ntkrnlmp!_OBJECT_HEADER_PROCESS_INFO
 </span></span><span class="line"><span class="cl">   +0x000 ExclusiveProcess : Ptr64 _EPROCESS
 </span></span><span class="line"><span class="cl">   +0x008 Reserved         : Uint8B
@@ -593,8 +408,8 @@
 </span></span></code></pre></div><ul>
 <li>It&rsquo;s just for alignment of object body.</li>
 </ul>
-<p><img alt="alt text" loading="lazy" src="/posts/windows-objects/image-3.png"></p>
-<h5 id="object_header-typeindex">OBJECT_HEADER TypeIndex<a hidden class="anchor" aria-hidden="true" href="#object_header-typeindex">#</a></h5>
+<p><img src="/posts/windows-objects/image-3.png" alt="alt text"></p>
+<h5 id="object_header-typeindex">OBJECT_HEADER TypeIndex</h5>
 <p>In older versions of Windows,<code>Type</code> field used to point to <code>_OBJECT_TYPE</code> structure. Starting with Windows 7, <code>TypeIndex</code> field is introduced, which stores an encoded value. When decoded, it provides an index that is used to locate <code>_OBJECT_TYPE</code> structure within <code>ObTypeIndexTable</code> array.</p>
 <p>Now, Let&rsquo;s look into <strong>TypeIndex</strong></p>
 <div class="highlight"><pre tabindex="0" class="chroma"><code class="language-rs" data-lang="rs"><span class="line"><span class="cl"><span class="mi">0</span>: <span class="nc">kd</span><span class="o">&gt;</span><span class="w"> </span><span class="n">dt</span><span class="w"> </span><span class="n">nt</span><span class="o">!</span><span class="no">_OBJECT_HEADER</span><span class="w"> </span><span class="n">ffffc509bf28b080</span><span class="o">-</span><span class="mi">30</span><span class="w">
@@ -639,7 +454,7 @@
 <div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">0: kd&gt; db nt!ObHeaderCookie L1
 </span></span><span class="line"><span class="cl">fffff807<span class="sb">`</span>1ed1472c  bb                                               .   
 </span></span></code></pre></div><p><code>(((_OBJECT_HEADER &gt;&gt; 0x8) &amp; 0xff ) ^ (_OBJECT_HEADER-&gt;TypeIndex) ) ^ ((nt!ObHeaderCookie) &amp; 0xff)</code></p>
-<h5 id="obgetobjecttype">ObGetObjectType<a hidden class="anchor" aria-hidden="true" href="#obgetobjecttype">#</a></h5>
+<h5 id="obgetobjecttype">ObGetObjectType</h5>
 <div class="highlight"><pre tabindex="0" class="chroma"><code class="language-py" data-lang="py"><span class="line"><span class="cl"><span class="n">nt</span><span class="err">!</span><span class="n">ObTypeIndexTable</span><span class="p">[</span>
 </span></span><span class="line"><span class="cl"><span class="p">(</span>   <span class="p">(((</span><span class="n">_OBJECT_HEADER</span> <span class="o">&gt;&gt;</span> <span class="mh">0x8</span><span class="p">)</span> <span class="o">&amp;</span> <span class="mh">0xff</span> <span class="p">)</span> <span class="o">^</span> <span class="p">(</span><span class="n">_OBJECT_HEADER</span><span class="o">-&gt;</span><span class="n">TypeIndex</span><span class="p">)</span> <span class="p">)</span> <span class="o">^</span> <span class="p">((</span><span class="n">nt</span><span class="err">!</span><span class="n">ObHeaderCookie</span><span class="p">)</span> <span class="o">&amp;</span> <span class="mh">0xff</span><span class="p">))</span> <span class="o">*</span> <span class="mh">0x08</span>
 </span></span><span class="line"><span class="cl">   <span class="p">]</span>
@@ -710,7 +525,7 @@
 </span></span><span class="line"><span class="cl">   <span class="nv">NonPagedPoolNxCacheAligned</span> <span class="o">=</span> 0n516
 </span></span><span class="line"><span class="cl">   <span class="nv">NonPagedPoolSessionNx</span> <span class="o">=</span> 0n544
 </span></span></code></pre></div><p>Lets check it for some other process</p>
-<h4 id="inspecting-notepadexe">Inspecting Notepad.exe<a hidden class="anchor" aria-hidden="true" href="#inspecting-notepadexe">#</a></h4>
+<h4 id="inspecting-notepadexe">Inspecting Notepad.exe</h4>
 <div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">0: kd&gt; !process <span class="m">0</span> <span class="m">0</span> notepad.exe
 </span></span><span class="line"><span class="cl">PROCESS ffffc509c222c340
 </span></span><span class="line"><span class="cl">    SessionId: <span class="m">1</span>  Cid: 05a8    Peb: 74d112d000  ParentCid: <span class="m">1148</span>
@@ -783,7 +598,7 @@
 </span></span><span class="line"><span class="cl">   +0x0b8 TypeLock         : _EX_PUSH_LOCK
 </span></span><span class="line"><span class="cl">   +0x0c0 Key              : 0x636f7250
 </span></span><span class="line"><span class="cl">   +0x0c8 CallbackList     : _LIST_ENTRY <span class="o">[</span> 0xffff9901<span class="sb">`</span>07feee00 - 0xffff9901<span class="sb">`</span>07feee00 <span class="o">]</span>
-</span></span></code></pre></div><h4 id="inspecting-csrssexe">Inspecting csrss.exe<a hidden class="anchor" aria-hidden="true" href="#inspecting-csrssexe">#</a></h4>
+</span></span></code></pre></div><h4 id="inspecting-csrssexe">Inspecting csrss.exe</h4>
 <div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">
 </span></span><span class="line"><span class="cl">0: kd&gt; !process csrss.exe
 </span></span><span class="line"><span class="cl">PROCESS ffff938cd7e86080
@@ -852,7 +667,7 @@
 </ul>
 <div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">0: kd&gt; dt nt!_OBJECT_HEADER_PADDING_INFO ffff938cd7e86080-30-4
 </span></span><span class="line"><span class="cl">   +0x000 PaddingAmount    : 0x30
-</span></span></code></pre></div><p><img alt="alt text" loading="lazy" src="image-1.png"></p>
+</span></span></code></pre></div><p><img src="image-1.png" alt="alt text"></p>
 <p><strong>References</strong></p>
 <ul>
 <li>
@@ -869,217 +684,59 @@
 </li>
 </ul>
 
-
-  </div>
-
-  <footer class="post-footer">
-    <ul class="post-tags">
-      <li><a href="http://localhost:1313/tags/windows-internals/">Windows Internals</a></li>
-      <li><a href="http://localhost:1313/tags/kernel-objects/">Kernel Objects</a></li>
-      <li><a href="http://localhost:1313/tags/debugging/">Debugging</a></li>
-      <li><a href="http://localhost:1313/tags/reverse-engineering/">Reverse Engineering</a></li>
-    </ul>
-<nav class="paginav">
-  <a class="prev" href="http://localhost:1313/posts/windows-bigpools/windows-bigpools/">
-    <span class="title">« Prev</span>
-    <br>
-    <span>Windows Bigpools</span>
-  </a>
-  <a class="next" href="http://localhost:1313/posts/application-crash-dump/">
-    <span class="title">Next »</span>
-    <br>
-    <span>Application Crash Dump Analysis</span>
-  </a>
-</nav>
+    <h4><a href="http://localhost:1313/">Back to Home</a></h4>
+</div>
 
 
-<ul class="share-buttons">
-    <li>
-        <a target="_blank" rel="noopener noreferrer" aria-label="share Windows Objects: Structure, Headers, and Internal Mechanics on x"
-            href="https://x.com/intent/tweet/?text=Windows%20Objects%3a%20Structure%2c%20Headers%2c%20and%20Internal%20Mechanics&amp;url=http%3a%2f%2flocalhost%3a1313%2fposts%2fwindows-objects%2f&amp;hashtags=WindowsInternals%2cKernelObjects%2cDebugging%2cReverseEngineering">
-            <svg version="1.1" viewBox="0 0 512 512" xml:space="preserve" height="30px" width="30px" fill="currentColor">
-                <path
-                    d="M512 62.554 L 512 449.446 C 512 483.97 483.97 512 449.446 512 L 62.554 512 C 28.03 512 0 483.97 0 449.446 L 0 62.554 C 0 28.03 28.029 0 62.554 0 L 449.446 0 C 483.971 0 512 28.03 512 62.554 Z M 269.951 190.75 L 182.567 75.216 L 56 75.216 L 207.216 272.95 L 63.9 436.783 L 125.266 436.783 L 235.9 310.383 L 332.567 436.783 L 456 436.783 L 298.367 228.367 L 432.367 75.216 L 371.033 75.216 Z M 127.633 110 L 164.101 110 L 383.481 400.065 L 349.5 400.065 Z" />
-            </svg>
-        </a>
-    </li>
-    <li>
-        <a target="_blank" rel="noopener noreferrer" aria-label="share Windows Objects: Structure, Headers, and Internal Mechanics on linkedin"
-            href="https://www.linkedin.com/shareArticle?mini=true&amp;url=http%3a%2f%2flocalhost%3a1313%2fposts%2fwindows-objects%2f&amp;title=Windows%20Objects%3a%20Structure%2c%20Headers%2c%20and%20Internal%20Mechanics&amp;summary=Windows%20Objects%3a%20Structure%2c%20Headers%2c%20and%20Internal%20Mechanics&amp;source=http%3a%2f%2flocalhost%3a1313%2fposts%2fwindows-objects%2f">
-            <svg version="1.1" viewBox="0 0 512 512" xml:space="preserve" height="30px" width="30px" fill="currentColor">
-                <path
-                    d="M449.446,0c34.525,0 62.554,28.03 62.554,62.554l0,386.892c0,34.524 -28.03,62.554 -62.554,62.554l-386.892,0c-34.524,0 -62.554,-28.03 -62.554,-62.554l0,-386.892c0,-34.524 28.029,-62.554 62.554,-62.554l386.892,0Zm-288.985,423.278l0,-225.717l-75.04,0l0,225.717l75.04,0Zm270.539,0l0,-129.439c0,-69.333 -37.018,-101.586 -86.381,-101.586c-39.804,0 -57.634,21.891 -67.617,37.266l0,-31.958l-75.021,0c0.995,21.181 0,225.717 0,225.717l75.02,0l0,-126.056c0,-6.748 0.486,-13.492 2.474,-18.315c5.414,-13.475 17.767,-27.434 38.494,-27.434c27.135,0 38.007,20.707 38.007,51.037l0,120.768l75.024,0Zm-307.552,-334.556c-25.674,0 -42.448,16.879 -42.448,39.002c0,21.658 16.264,39.002 41.455,39.002l0.484,0c26.165,0 42.452,-17.344 42.452,-39.002c-0.485,-22.092 -16.241,-38.954 -41.943,-39.002Z" />
-            </svg>
-        </a>
-    </li>
-    <li>
-        <a target="_blank" rel="noopener noreferrer" aria-label="share Windows Objects: Structure, Headers, and Internal Mechanics on reddit"
-            href="https://reddit.com/submit?url=http%3a%2f%2flocalhost%3a1313%2fposts%2fwindows-objects%2f&title=Windows%20Objects%3a%20Structure%2c%20Headers%2c%20and%20Internal%20Mechanics">
-            <svg version="1.1" viewBox="0 0 512 512" xml:space="preserve" height="30px" width="30px" fill="currentColor">
-                <path
-                    d="M449.446,0c34.525,0 62.554,28.03 62.554,62.554l0,386.892c0,34.524 -28.03,62.554 -62.554,62.554l-386.892,0c-34.524,0 -62.554,-28.03 -62.554,-62.554l0,-386.892c0,-34.524 28.029,-62.554 62.554,-62.554l386.892,0Zm-3.446,265.638c0,-22.964 -18.616,-41.58 -41.58,-41.58c-11.211,0 -21.361,4.457 -28.841,11.666c-28.424,-20.508 -67.586,-33.757 -111.204,-35.278l18.941,-89.121l61.884,13.157c0.756,15.734 13.642,28.29 29.56,28.29c16.407,0 29.706,-13.299 29.706,-29.701c0,-16.403 -13.299,-29.702 -29.706,-29.702c-11.666,0 -21.657,6.792 -26.515,16.578l-69.105,-14.69c-1.922,-0.418 -3.939,-0.042 -5.585,1.036c-1.658,1.073 -2.811,2.761 -3.224,4.686l-21.152,99.438c-44.258,1.228 -84.046,14.494 -112.837,35.232c-7.468,-7.164 -17.589,-11.591 -28.757,-11.591c-22.965,0 -41.585,18.616 -41.585,41.58c0,16.896 10.095,31.41 24.568,37.918c-0.639,4.135 -0.99,8.328 -0.99,12.576c0,63.977 74.469,115.836 166.33,115.836c91.861,0 166.334,-51.859 166.334,-115.836c0,-4.218 -0.347,-8.387 -0.977,-12.493c14.564,-6.47 24.735,-21.034 24.735,-38.001Zm-119.474,108.193c-20.27,20.241 -59.115,21.816 -70.534,21.816c-11.428,0 -50.277,-1.575 -70.522,-21.82c-3.007,-3.008 -3.007,-7.882 0,-10.889c3.003,-2.999 7.882,-3.003 10.885,0c12.777,12.781 40.11,17.317 59.637,17.317c19.522,0 46.86,-4.536 59.657,-17.321c3.016,-2.999 7.886,-2.995 10.885,0.008c3.008,3.011 3.003,7.882 -0.008,10.889Zm-5.23,-48.781c-16.373,0 -29.701,-13.324 -29.701,-29.698c0,-16.381 13.328,-29.714 29.701,-29.714c16.378,0 29.706,13.333 29.706,29.714c0,16.374 -13.328,29.698 -29.706,29.698Zm-160.386,-29.702c0,-16.381 13.328,-29.71 29.714,-29.71c16.369,0 29.689,13.329 29.689,29.71c0,16.373 -13.32,29.693 -29.689,29.693c-16.386,0 -29.714,-13.32 -29.714,-29.693Z" />
-            </svg>
-        </a>
-    </li>
-    <li>
-        <a target="_blank" rel="noopener noreferrer" aria-label="share Windows Objects: Structure, Headers, and Internal Mechanics on facebook"
-            href="https://facebook.com/sharer/sharer.php?u=http%3a%2f%2flocalhost%3a1313%2fposts%2fwindows-objects%2f">
-            <svg version="1.1" viewBox="0 0 512 512" xml:space="preserve" height="30px" width="30px" fill="currentColor">
-                <path
-                    d="M449.446,0c34.525,0 62.554,28.03 62.554,62.554l0,386.892c0,34.524 -28.03,62.554 -62.554,62.554l-106.468,0l0,-192.915l66.6,0l12.672,-82.621l-79.272,0l0,-53.617c0,-22.603 11.073,-44.636 46.58,-44.636l36.042,0l0,-70.34c0,0 -32.71,-5.582 -63.982,-5.582c-65.288,0 -107.96,39.569 -107.96,111.204l0,62.971l-72.573,0l0,82.621l72.573,0l0,192.915l-191.104,0c-34.524,0 -62.554,-28.03 -62.554,-62.554l0,-386.892c0,-34.524 28.029,-62.554 62.554,-62.554l386.892,0Z" />
-            </svg>
-        </a>
-    </li>
-    <li>
-        <a target="_blank" rel="noopener noreferrer" aria-label="share Windows Objects: Structure, Headers, and Internal Mechanics on whatsapp"
-            href="https://api.whatsapp.com/send?text=Windows%20Objects%3a%20Structure%2c%20Headers%2c%20and%20Internal%20Mechanics%20-%20http%3a%2f%2flocalhost%3a1313%2fposts%2fwindows-objects%2f">
-            <svg version="1.1" viewBox="0 0 512 512" xml:space="preserve" height="30px" width="30px" fill="currentColor">
-                <path
-                    d="M449.446,0c34.525,0 62.554,28.03 62.554,62.554l0,386.892c0,34.524 -28.03,62.554 -62.554,62.554l-386.892,0c-34.524,0 -62.554,-28.03 -62.554,-62.554l0,-386.892c0,-34.524 28.029,-62.554 62.554,-62.554l386.892,0Zm-58.673,127.703c-33.842,-33.881 -78.847,-52.548 -126.798,-52.568c-98.799,0 -179.21,80.405 -179.249,179.234c-0.013,31.593 8.241,62.428 23.927,89.612l-25.429,92.884l95.021,-24.925c26.181,14.28 55.659,21.807 85.658,21.816l0.074,0c98.789,0 179.206,-80.413 179.247,-179.243c0.018,-47.895 -18.61,-92.93 -52.451,-126.81Zm-126.797,275.782l-0.06,0c-26.734,-0.01 -52.954,-7.193 -75.828,-20.767l-5.441,-3.229l-56.386,14.792l15.05,-54.977l-3.542,-5.637c-14.913,-23.72 -22.791,-51.136 -22.779,-79.287c0.033,-82.142 66.867,-148.971 149.046,-148.971c39.793,0.014 77.199,15.531 105.329,43.692c28.128,28.16 43.609,65.592 43.594,105.4c-0.034,82.149 -66.866,148.983 -148.983,148.984Zm81.721,-111.581c-4.479,-2.242 -26.499,-13.075 -30.604,-14.571c-4.105,-1.495 -7.091,-2.241 -10.077,2.241c-2.986,4.483 -11.569,14.572 -14.182,17.562c-2.612,2.988 -5.225,3.364 -9.703,1.12c-4.479,-2.241 -18.91,-6.97 -36.017,-22.23c-13.314,-11.876 -22.304,-26.542 -24.916,-31.026c-2.612,-4.484 -0.279,-6.908 1.963,-9.14c2.016,-2.007 4.48,-5.232 6.719,-7.847c2.24,-2.615 2.986,-4.484 4.479,-7.472c1.493,-2.99 0.747,-5.604 -0.374,-7.846c-1.119,-2.241 -10.077,-24.288 -13.809,-33.256c-3.635,-8.733 -7.327,-7.55 -10.077,-7.688c-2.609,-0.13 -5.598,-0.158 -8.583,-0.158c-2.986,0 -7.839,1.121 -11.944,5.604c-4.105,4.484 -15.675,15.32 -15.675,37.364c0,22.046 16.048,43.342 18.287,46.332c2.24,2.99 31.582,48.227 76.511,67.627c10.685,4.615 19.028,7.371 25.533,9.434c10.728,3.41 20.492,2.929 28.209,1.775c8.605,-1.285 26.499,-10.833 30.231,-21.295c3.732,-10.464 3.732,-19.431 2.612,-21.298c-1.119,-1.869 -4.105,-2.99 -8.583,-5.232Z" />
-            </svg>
-        </a>
-    </li>
-    <li>
-        <a target="_blank" rel="noopener noreferrer" aria-label="share Windows Objects: Structure, Headers, and Internal Mechanics on telegram"
-            href="https://telegram.me/share/url?text=Windows%20Objects%3a%20Structure%2c%20Headers%2c%20and%20Internal%20Mechanics&amp;url=http%3a%2f%2flocalhost%3a1313%2fposts%2fwindows-objects%2f">
-            <svg version="1.1" xml:space="preserve" viewBox="2 2 28 28" height="30px" width="30px" fill="currentColor">
-                <path
-                    d="M26.49,29.86H5.5a3.37,3.37,0,0,1-2.47-1,3.35,3.35,0,0,1-1-2.47V5.48A3.36,3.36,0,0,1,3,3,3.37,3.37,0,0,1,5.5,2h21A3.38,3.38,0,0,1,29,3a3.36,3.36,0,0,1,1,2.46V26.37a3.35,3.35,0,0,1-1,2.47A3.38,3.38,0,0,1,26.49,29.86Zm-5.38-6.71a.79.79,0,0,0,.85-.66L24.73,9.24a.55.55,0,0,0-.18-.46.62.62,0,0,0-.41-.17q-.08,0-16.53,6.11a.59.59,0,0,0-.41.59.57.57,0,0,0,.43.52l4,1.24,1.61,4.83a.62.62,0,0,0,.63.43.56.56,0,0,0,.4-.17L16.54,20l4.09,3A.9.9,0,0,0,21.11,23.15ZM13.8,20.71l-1.21-4q8.72-5.55,8.78-5.55c.15,0,.23,0,.23.16a.18.18,0,0,1,0,.06s-2.51,2.3-7.52,6.8Z" />
-            </svg>
-        </a>
-    </li>
-    <li>
-        <a target="_blank" rel="noopener noreferrer" aria-label="share Windows Objects: Structure, Headers, and Internal Mechanics on ycombinator"
-            href="https://news.ycombinator.com/submitlink?t=Windows%20Objects%3a%20Structure%2c%20Headers%2c%20and%20Internal%20Mechanics&u=http%3a%2f%2flocalhost%3a1313%2fposts%2fwindows-objects%2f">
-            <svg version="1.1" xml:space="preserve" width="30px" height="30px" viewBox="0 0 512 512" fill="currentColor"
-                xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape">
-                <path
-                    d="M449.446 0C483.971 0 512 28.03 512 62.554L512 449.446C512 483.97 483.97 512 449.446 512L62.554 512C28.03 512 0 483.97 0 449.446L0 62.554C0 28.03 28.029 0 62.554 0L449.446 0ZM183.8767 87.9921H121.8427L230.6673 292.4508V424.0079H281.3328V292.4508L390.1575 87.9921H328.1233L256 238.2489z" />
-            </svg>
-        </a>
-    </li>
-</ul>
+        </div><footer class="container">
+    <hr class="soften">
+    <p>
+&copy; 
 
-  </footer>
-</article>
-    </main>
     
-<footer class="footer">
-        <span>&copy; 2025 <a href="http://localhost:1313/">shark.exe</a></span> · 
 
-    <span>
-        Powered by
-        <a href="https://gohugo.io/" rel="noopener noreferrer" target="_blank">Hugo</a> &
-        <a href="https://github.com/adityatelange/hugo-PaperMod/" rel="noopener" target="_blank">PaperMod</a>
-    </span>
+<span id="thisyear">2026</span>
+
+
+</p>
+    <p class="text-center">
+        
+        
+        
+        
+        
+    </p>
 </footer>
-<a href="#top" aria-label="go to top" title="Go to Top (Alt + G)" class="top-link" id="top-link" accesskey="g">
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 6" fill="currentColor">
-        <path d="M12 6H0l6-6z" />
-    </svg>
-</a>
 
+</body><link rel="stylesheet" href="/css/bootstrap.css">
+<link rel="stylesheet" href="/css/bootstrap-responsive.css">
+<link rel="stylesheet" href="/css/style.css">
+
+<script src="/js/jquery.js"></script>
+<script src="/js/bootstrap-386.js"></script>
+<script src="/js/bootstrap-transition.js"></script>
+<script src="/js/bootstrap-alert.js"></script>
+<script src="/js/bootstrap-modal.js"></script>
+<script src="/js/bootstrap-dropdown.js"></script>
+<script src="/js/bootstrap-scrollspy.js"></script>
+<script src="/js/bootstrap-tab.js"></script>
+<script src="/js/bootstrap-tooltip.js"></script>
+<script src="/js/bootstrap-popover.js"></script>
+<script src="/js/bootstrap-button.js"></script>
+<script src="/js/bootstrap-collapse.js"></script>
+<script src="/js/bootstrap-carousel.js"></script>
+<script src="/js/bootstrap-typeahead.js"></script>
+<script src="/js/bootstrap-affix.js"></script>
 <script>
-    let menu = document.getElementById('menu')
-    if (menu) {
-        menu.scrollLeft = localStorage.getItem("menu-scroll-position");
-        menu.onscroll = function () {
-            localStorage.setItem("menu-scroll-position", menu.scrollLeft);
-        }
-    }
-
-    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-        anchor.addEventListener("click", function (e) {
-            e.preventDefault();
-            var id = this.getAttribute("href").substr(1);
-            if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView({
-                    behavior: "smooth"
-                });
-            } else {
-                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView();
-            }
-            if (id === "top") {
-                history.replaceState(null, null, " ");
-            } else {
-                history.pushState(null, null, `#${id}`);
-            }
-        });
-    });
-
-</script>
-<script>
-    var mybutton = document.getElementById("top-link");
-    window.onscroll = function () {
-        if (document.body.scrollTop > 800 || document.documentElement.scrollTop > 800) {
-            mybutton.style.visibility = "visible";
-            mybutton.style.opacity = "1";
-        } else {
-            mybutton.style.visibility = "hidden";
-            mybutton.style.opacity = "0";
-        }
+    _386 = { 
+        fastLoad: null ,
+        onePass: null , 
+        speedFactor: 10 
     };
 
+    
+    function ThisYear() {
+        document.getElementById('thisyear').innerHTML = new Date().getFullYear();
+    };
 </script>
-<script>
-    document.getElementById("theme-toggle").addEventListener("click", () => {
-        if (document.body.className.includes("dark")) {
-            document.body.classList.remove('dark');
-            localStorage.setItem("pref-theme", 'light');
-        } else {
-            document.body.classList.add('dark');
-            localStorage.setItem("pref-theme", 'dark');
-        }
-    })
-
-</script>
-<script>
-    document.querySelectorAll('pre > code').forEach((codeblock) => {
-        const container = codeblock.parentNode.parentNode;
-
-        const copybutton = document.createElement('button');
-        copybutton.classList.add('copy-code');
-        copybutton.innerHTML = 'copy';
-
-        function copyingDone() {
-            copybutton.innerHTML = 'copied!';
-            setTimeout(() => {
-                copybutton.innerHTML = 'copy';
-            }, 2000);
-        }
-
-        copybutton.addEventListener('click', (cb) => {
-            if ('clipboard' in navigator) {
-                navigator.clipboard.writeText(codeblock.textContent);
-                copyingDone();
-                return;
-            }
-
-            const range = document.createRange();
-            range.selectNodeContents(codeblock);
-            const selection = window.getSelection();
-            selection.removeAllRanges();
-            selection.addRange(range);
-            try {
-                document.execCommand('copy');
-                copyingDone();
-            } catch (e) { };
-            selection.removeRange(range);
-        });
-
-        if (container.classList.contains("highlight")) {
-            container.appendChild(copybutton);
-        } else if (container.parentNode.firstChild == container) {
-            
-        } else if (codeblock.parentNode.parentNode.parentNode.parentNode.parentNode.nodeName == "TABLE") {
-            
-            codeblock.parentNode.parentNode.parentNode.parentNode.parentNode.appendChild(copybutton);
-        } else {
-            
-            codeblock.parentNode.appendChild(copybutton);
-        }
-    });
-</script>
-</body>
-
 </html>

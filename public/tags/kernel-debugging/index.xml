@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes"?>
-<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/">
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
-    <title>Kernel Debugging on shark.exe</title>
+    <title>Kernel Debugging on shark-asmx</title>
     <link>http://localhost:1313/tags/kernel-debugging/</link>
-    <description>Recent content in Kernel Debugging on shark.exe</description>
-    <generator>Hugo -- 0.147.8</generator>
+    <description>Recent content in Kernel Debugging on shark-asmx</description>
+    <generator>Hugo</generator>
     <language>en</language>
     <lastBuildDate>Fri, 30 May 2025 08:02:59 +0530</lastBuildDate>
     <atom:link href="http://localhost:1313/tags/kernel-debugging/index.xml" rel="self" type="application/rss+xml" />
@@ -13,7 +13,7 @@
       <link>http://localhost:1313/posts/windows-bigpools/windows-bigpools/</link>
       <pubDate>Fri, 30 May 2025 08:02:59 +0530</pubDate>
       <guid>http://localhost:1313/posts/windows-bigpools/windows-bigpools/</guid>
-      <description>An overview of how the Windows Kernel handles large memory allocations using BigPools, including internal structures and debugging techniques.</description>
+      <description>&lt;p&gt;PoolTag is a 4 bytes value (unsigned int value) present in the header (i.e. &lt;code&gt;POOL_HEADER&lt;/code&gt;) .Microsoft creates pool tag mostly for debugging purposes. So, whenever Kernel creates any object in pool memory, it creates a &lt;code&gt;POOL_HEADER&lt;/code&gt; which contains a &lt;code&gt;PoolTag&lt;/code&gt; field which contains information regarding what kind of object is being created.&lt;/p&gt;&#xA;&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-bash&#34; data-lang=&#34;bash&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;0: kd&amp;gt; dt nt!_POOL_HEADER &#xA;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;   +0x000 PreviousSize     : Pos 0, &lt;span class=&#34;m&#34;&gt;8&lt;/span&gt; Bits&#xA;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;   +0x000 PoolIndex        : Pos 8, &lt;span class=&#34;m&#34;&gt;8&lt;/span&gt; Bits&#xA;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;   +0x002 BlockSize        : Pos 0, &lt;span class=&#34;m&#34;&gt;8&lt;/span&gt; Bits&#xA;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;   +0x002 PoolType         : Pos 8, &lt;span class=&#34;m&#34;&gt;8&lt;/span&gt; Bits&#xA;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;   +0x000 Ulong1           : Uint4B&#xA;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;   +0x004 PoolTag          : Uint4B&#xA;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;   +0x008 ProcessBilled    : Ptr64 _EPROCESS&#xA;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;   +0x008 AllocatorBackTraceIndex : Uint2B&#xA;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;   +0x00a PoolTagHash      : Uint2B&#xA;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;Let&amp;rsquo;s look at one of the running process, how it actually looks like&lt;/p&gt;</description>
     </item>
   </channel>
 </rss>

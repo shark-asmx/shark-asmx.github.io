@@ -125,19 +125,13 @@
     <loc>http://localhost:1313/tags/portable-executable/</loc>
     <lastmod>2025-01-12T00:00:00+00:00</lastmod>
   </url><url>
-    <loc>http://localhost:1313/categories/</loc>
-    <lastmod>2025-01-11T17:00:50+00:00</lastmod>
-  </url><url>
-    <loc>http://localhost:1313/categories/debugging/</loc>
-    <lastmod>2025-01-11T17:00:50+00:00</lastmod>
-  </url><url>
-    <loc>http://localhost:1313/posts/pe-parse-windbg/pe-parse-windbg/</loc>
-    <lastmod>2025-01-11T17:00:50+00:00</lastmod>
-  </url><url>
     <loc>http://localhost:1313/posts/pe-parse-windbg/</loc>
     <lastmod>2025-01-11T17:00:50+05:30</lastmod>
   </url><url>
     <loc>http://localhost:1313/tags/bi0sctf2024/</loc>
+    <lastmod>2024-03-08T07:51:58+00:00</lastmod>
+  </url><url>
+    <loc>http://localhost:1313/categories/</loc>
     <lastmod>2024-03-08T07:51:58+00:00</lastmod>
   </url><url>
     <loc>http://localhost:1313/tags/file-system-analysis/</loc>

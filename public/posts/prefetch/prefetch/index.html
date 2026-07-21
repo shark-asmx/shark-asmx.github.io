@@ -1,230 +1,47 @@
 <!DOCTYPE html>
-<html lang="en" dir="auto">
-
-<head><script src="/livereload.js?mindelay=10&amp;v=2&amp;port=1313&amp;path=livereload" data-no-instant defer></script><meta charset="utf-8">
-<meta http-equiv="X-UA-Compatible" content="IE=edge">
-<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<meta name="robots" content="index, follow">
-<title>Prefetch Files | shark.exe</title>
-<meta name="keywords" content="Windows Prefetch, Windows Forensics, Digital Forensics, Prefetch File Analysis, Prefetch Parser, Windows Performance">
-<meta name="description" content="An analysis of Windows Prefetch files, their structure, forensic significance, and decompression process.">
-<meta name="author" content="5h4rrk">
-<link rel="canonical" href="http://localhost:1313/posts/prefetch/prefetch/">
-<link crossorigin="anonymous" href="/assets/css/stylesheet.180f19e094a50e5c790e9ddd948e1a18e5dc254c922bb069dceb5480237cf06c.css" integrity="sha256-GA8Z4JSlDlx5Dp3dlI4aGOXcJUySK7Bp3OtUgCN88Gw=" rel="preload stylesheet" as="style">
-<link rel="icon" href="http://localhost:1313/favicon.ico">
-<link rel="icon" type="image/png" sizes="16x16" href="http://localhost:1313/favicon-16x16.png">
-<link rel="icon" type="image/png" sizes="32x32" href="http://localhost:1313/favicon-32x32.png">
-<link rel="apple-touch-icon" href="http://localhost:1313/apple-touch-icon.png">
-<link rel="mask-icon" href="http://localhost:1313/safari-pinned-tab.svg">
-<meta name="theme-color" content="#2e2e33">
-<meta name="msapplication-TileColor" content="#2e2e33">
-<link rel="alternate" hreflang="en" href="http://localhost:1313/posts/prefetch/prefetch/">
-<noscript>
-    <style>
-        #theme-toggle,
-        .top-link {
-            display: none;
-        }
-
-    </style>
-    <style>
-        @media (prefers-color-scheme: dark) {
-            :root {
-                --theme: rgb(29, 30, 32);
-                --entry: rgb(46, 46, 51);
-                --primary: rgb(218, 218, 219);
-                --secondary: rgb(155, 156, 157);
-                --tertiary: rgb(65, 66, 68);
-                --content: rgb(196, 196, 197);
-                --code-block-bg: rgb(46, 46, 51);
-                --code-bg: rgb(55, 56, 62);
-                --border: rgb(51, 51, 51);
-            }
-
-            .list {
-                background: var(--theme);
-            }
-
-            .list:not(.dark)::-webkit-scrollbar-track {
-                background: 0 0;
-            }
-
-            .list:not(.dark)::-webkit-scrollbar-thumb {
-                border-color: var(--theme);
-            }
-        }
-
-    </style>
-</noscript><meta property="og:url" content="http://localhost:1313/posts/prefetch/prefetch/">
-  <meta property="og:site_name" content="shark.exe">
-  <meta property="og:title" content="Prefetch Files">
-  <meta property="og:description" content="An analysis of Windows Prefetch files, their structure, forensic significance, and decompression process.">
-  <meta property="og:locale" content="en">
-  <meta property="og:type" content="article">
-    <meta property="article:section" content="posts">
-    <meta property="article:published_time" content="2025-06-12T09:54:09+05:30">
-    <meta property="article:modified_time" content="2025-06-12T09:54:09+05:30">
-    <meta property="article:tag" content="Windows Prefetch">
-    <meta property="article:tag" content="Windows Forensics">
-    <meta property="article:tag" content="Digital Forensics">
-    <meta property="article:tag" content="Prefetch File Analysis">
-    <meta property="article:tag" content="Prefetch Parser">
-    <meta property="article:tag" content="Windows Performance">
-<meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="Prefetch Files">
-<meta name="twitter:description" content="An analysis of Windows Prefetch files, their structure, forensic significance, and decompression process.">
-
-
-<script type="application/ld+json">
-{
-  "@context": "https://schema.org",
-  "@type": "BreadcrumbList",
-  "itemListElement": [
-    {
-      "@type": "ListItem",
-      "position":  1 ,
-      "name": "Posts",
-      "item": "http://localhost:1313/posts/"
-    }, 
-    {
-      "@type": "ListItem",
-      "position":  2 ,
-      "name": "Prefetch Files",
-      "item": "http://localhost:1313/posts/prefetch/prefetch/"
-    }
-  ]
-}
-</script>
-<script type="application/ld+json">
-{
-  "@context": "https://schema.org",
-  "@type": "BlogPosting",
-  "headline": "Prefetch Files",
-  "name": "Prefetch Files",
-  "description": "An analysis of Windows Prefetch files, their structure, forensic significance, and decompression process.",
-  "keywords": [
-    "Windows Prefetch", "Windows Forensics", "Digital Forensics", "Prefetch File Analysis", "Prefetch Parser", "Windows Performance"
-  ],
-  "articleBody": "Prefetch Files Prefetch files are created by Windows to speed up the loading process by caching the neccessary data. When we fire up a process, it will cache the details like files accessed and stores it in small file i.e. prefetch files under Prefetch subfolder in Windows. When the application is opened for the next time, it will load the files accessed. Windows Prefetch files are located in C:\\Windows\\Prefetch\\*.pf. From forensic perspective, it provides various valuable information like\nExecutable Name Full Executable Path Execution Count Last Run Time TimeStamp (when executed i.e. Last 8 timestamps) MACB Time Executable Path Hash Volume Information Files accessed Directories accessed prefetch_settings = { 0: \"Prefetch-Disabled\", 1: \"Application-Prefetch-Enabled\", 2: \"Boot-Prefetch-Enabled\", 3: \"Application-Boot-Prefetch-Enabled\" } Maximum Number of Prefetch files WindowsXP-Windows7: 128 files Windows8-Windows11: 1024 files Prefetch File Structure Windows Prefetch files are compressed and stored in .pf format. To obtain the information, we need to decompress it first.\nCompressed Format Compressed Header ( 0x4 bytes) Uncompressed Size ( 0x4 bytes) CRC32 ( 0x4 bytes) // Optional Compressed buffer Compressed Header: 0x4D414D04 (MAM\\x04)\nCRC32 is an optional either it will present or absent.\nOverview of Compressed Prefetch file Without CRC32\nWith CRC32\nDecompressing It PrefetchDecompress.cpp\n// PrefetchDecompress.cpp : This file contains the 'main' function. Program // execution begins and ends there. #include #include #include import std; #define COMPRESSION_FORMAT_NONE (0x0000) // winnt #define COMPRESSION_FORMAT_DEFAULT (0x0001) // winnt #define COMPRESSION_FORMAT_LZNT1 (0x0002) // winnt #define COMPRESSION_FORMAT_XPRESS (0x0003) // winint #define COMPRESSION_FORMAT_XPRESS_HUFF (0x0004) // winint #define COMPRESSION_ENGINE_STANDARD (0x0000) // winnt #define COMPRESSION_ENGINE_MAXIMUM (0x0100) // winnt #define COMPRESSION_ENGINE_HIBER (0x0200) // winnt typedef ULONG32 u32; typedef ULONG64 u64; typedef UCHAR u8; typedef struct { u32 signature; u32 size; BYTE* compressedPayload; BYTE* payloadPtr; } COMPRESSED_PREFETCH; typedef NTSTATUS(WINAPI *RtlGetCompressionWorkSpaceSize_t)( USHORT CompressionFormatAndEngine, PULONG CompressBufferWorkSpaceSize, PULONG CompressFragmentWorkSpaceSize); typedef NTSTATUS(WINAPI *RtlDecompressBufferEx_t)( USHORT CompressionFormat, PUCHAR UncompressedBuffer, ULONG UncompressedBufferSize, PUCHAR CompressedBuffer, ULONG CompressedBufferSize, PULONG FinalCompressedSize, PVOID WorkSpace); void CleanUp(HMODULE hNtdll, HANDLE hFile) { if (hFile \u0026\u0026 hFile != INVALID_HANDLE_VALUE) CloseHandle(hFile); } void InitPrefetchBuff(COMPRESSED_PREFETCH *prefetch, SIZE_T req_size) { prefetch-\u003ecompressedPayload = (BYTE *)VirtualAlloc( nullptr, 0x00100000, MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE); prefetch-\u003epayloadPtr = (BYTE*) VirtualAlloc( nullptr, 0x00100000, MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE); if (prefetch-\u003ecompressedPayload == NULL) { std::println(\"[-] Failed to allocate buffer\"); } if (prefetch-\u003epayloadPtr == NULL) { std::println(\"[-] Failed to allocate buffer\"); } } void CleanPrefetch(COMPRESSED_PREFETCH* prefetch, SIZE_T size) { prefetch-\u003esize = 0x0; prefetch-\u003esignature = 0x0; VirtualFree(prefetch-\u003epayloadPtr, 0x00100000, MEM_DECOMMIT | MEM_FREE); VirtualFree(prefetch-\u003ecompressedPayload, 0x00100000, MEM_DECOMMIT | MEM_FREE); } int main() { std::println(\"[+] Windows Prefetch \"); HANDLE hFile = CreateFileA( R\"(E:\\files\\Wireshark.pf)\", GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr); if (hFile == INVALID_HANDLE_VALUE) { std::println(\"[?] Failed To Open File with ErrorCode {}\", GetLastError()); return GetLastError(); } ULONG CompressBufferWorkSpaceSize = 0x0; ULONG CompressFragmentWorkSpaceSize = 0x0; // Load the library HMODULE hNtdll = GetModuleHandleA(\"ntdll.dll\"); if (hNtdll == NULL) { std::println(\"Unable to Obtain handle\"); CloseHandle(\u0026hFile); return GetLastError(); } auto RtlGetCompressionWorkSpaceSizeFuncPtr = (RtlGetCompressionWorkSpaceSize_t) GetProcAddress(hNtdll, \"RtlGetCompressionWorkSpaceSize\"); auto RtlDecompressBufferExPtr = (RtlDecompressBufferEx_t) GetProcAddress(hNtdll, \"RtlDecompressBufferEx\"); if ((u64)RtlGetCompressionWorkSpaceSizeFuncPtr == NULL) { std::println(\"Unable to resolve RtlGetCompressionWorkSpaceSize\"); CleanUp(hNtdll, hFile); return GetLastError(); } if ((u64)RtlDecompressBufferExPtr == NULL) { std::println(\"Unable to resolve RtlDecompressBufferEx\"); CleanUp(hNtdll, hFile); return GetLastError(); } std::println(\"[OFFSET] RtlGetCompressionWorkSpaceSize @ {:#x} \",(u64)RtlGetCompressionWorkSpaceSizeFuncPtr); std::println(\"[OFFSET] RtlDecompressBufferExPtr @ {:#x} \",(u64)RtlDecompressBufferExPtr); NTSTATUS status = RtlGetCompressionWorkSpaceSizeFuncPtr( COMPRESSION_FORMAT_XPRESS_HUFF, \u0026CompressBufferWorkSpaceSize, \u0026CompressFragmentWorkSpaceSize); if (status == 0x0) { std::println(\"[+] Success: \\n\\tCompressBufferWorkSpaceSize = {:#x}\\n\\tCompressFragmentWorkSpaceSize = {:#x}\",(u64)CompressBufferWorkSpaceSize, (u64)CompressFragmentWorkSpaceSize); } COMPRESSED_PREFETCH prefetch; ULONG bytesRead; u32 sig = 0x0; u32 size = 0x0; u64 CompressedSize = (u64)GetFileSize(hFile, NULL) - 0x8; // TotalFileSize - HeaderSize ReadFile(hFile, \u0026sig, sizeof(UINT32), \u0026bytesRead, NULL); ReadFile(hFile, \u0026size, sizeof(UINT32), \u0026bytesRead, NULL); prefetch.size = size; prefetch.signature = sig; InitPrefetchBuff(\u0026prefetch, CompressBufferWorkSpaceSize); BOOL flag = ReadFile(hFile, prefetch.compressedPayload, CompressBufferWorkSpaceSize - 8, \u0026bytesRead, NULL); if (flag == 0x0) { std::println(\"File Read Failed Error Code {:#x}\", GetLastError()); } std::println(\"Signature {:#x}\", prefetch.signature); std::println(\"Decompressed Size {:#x}\", prefetch.size); std::println(\"Compressed Size {:#x}\", CompressedSize); // Decompressing ULONG FinalUncompressedSize = 0x0; PVOID workspace = VirtualAlloc(nullptr, CompressBufferWorkSpaceSize, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE); if (!workspace) { std::println(\"[-] Failed to allocate workspace\"); CleanUp(hNtdll, hFile); return GetLastError(); } NTSTATUS decompress_flag = RtlDecompressBufferExPtr( COMPRESSION_FORMAT_XPRESS_HUFF, prefetch.payloadPtr, prefetch.size, prefetch.compressedPayload, CompressedSize, \u0026FinalUncompressedSize, workspace); if (decompress_flag == 0x0) { std::println(\"Decompressed Successfully !\"); } HANDLE hDecomFile = CreateFileA( R\"(E:\\files\\Wireshark_decompressed.pf)\", GENERIC_WRITE, 0x0, nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr); if (hDecomFile != INVALID_HANDLE_VALUE) { ULONG bytesWritten = 0x0; auto status = WriteFile(hDecomFile, prefetch.payloadPtr, FinalUncompressedSize, \u0026bytesWritten, 0x0); if (status != 0x0) { std::println(\"File Written Successfully\"); } } VirtualFree(workspace, 0, MEM_RELEASE); CleanPrefetch(\u0026prefetch, CompressBufferWorkSpaceSize); std::println(\"Done\"); } ",
-  "wordCount" : "699",
-  "inLanguage": "en",
-  "datePublished": "2025-06-12T09:54:09+05:30",
-  "dateModified": "2025-06-12T09:54:09+05:30",
-  "author":{
-    "@type": "Person",
-    "name": "5h4rrk"
-  },
-  "mainEntityOfPage": {
-    "@type": "WebPage",
-    "@id": "http://localhost:1313/posts/prefetch/prefetch/"
-  },
-  "publisher": {
-    "@type": "Organization",
-    "name": "shark.exe",
-    "logo": {
-      "@type": "ImageObject",
-      "url": "http://localhost:1313/favicon.ico"
-    }
-  }
-}
-</script>
+<html lang="en"><head><script src="/livereload.js?mindelay=10&amp;v=2&amp;port=1313&amp;path=livereload" data-no-instant defer></script>
+    <title>shark-asmx</title>
+    <meta content="text/html;charset=utf-8" http-equiv="Content-Type">
+    <meta content="utf-8" http-equiv="encoding">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="format-detection" content="telephone=no" />
+    <meta name="theme-color" content="#000084" />
+    <link rel="icon" href="http://localhost:1313//favicon.ico">
+    <link rel="canonical" href="http://localhost:1313/">
+    
+    
 </head>
-
-<body class="" id="top">
-<script>
-    if (localStorage.getItem("pref-theme") === "dark") {
-        document.body.classList.add('dark');
-    } else if (localStorage.getItem("pref-theme") === "light") {
-        document.body.classList.remove('dark')
-    } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
-        document.body.classList.add('dark');
-    }
-
-</script>
-
-<header class="header">
-    <nav class="nav">
-        <div class="logo">
-            <a href="http://localhost:1313/" accesskey="h" title="shark.exe (Alt + H)">shark.exe</a>
-            <div class="logo-switches">
-                <button id="theme-toggle" accesskey="t" title="(Alt + T)" aria-label="Toggle theme">
-                    <svg id="moon" xmlns="http://www.w3.org/2000/svg" width="24" height="18" viewBox="0 0 24 24"
-                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                        stroke-linejoin="round">
-                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
-                    </svg>
-                    <svg id="sun" xmlns="http://www.w3.org/2000/svg" width="24" height="18" viewBox="0 0 24 24"
-                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                        stroke-linejoin="round">
-                        <circle cx="12" cy="12" r="5"></circle>
-                        <line x1="12" y1="1" x2="12" y2="3"></line>
-                        <line x1="12" y1="21" x2="12" y2="23"></line>
-                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
-                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
-                        <line x1="1" y1="12" x2="3" y2="12"></line>
-                        <line x1="21" y1="12" x2="23" y2="12"></line>
-                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
-                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
-                    </svg>
-                </button>
+<body>
+<nav class="navbar navbar-inverse navbar-fixed-top">
+    <div class="navbar-inner">
+        <div class="container">
+            <button type="button" class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse"></button>
+            <a class="brand" href="http://localhost:1313/">shark-asmx</a>
+            <div class="nav-collapse collapse">
+                <ul class="nav">
+                    
+                    
+                        
+                            <li>
+                                <a href="/posts">
+                                    
+                                    <span>posts</span>
+                                </a>
+                            </li>
+                        
+                    
+                </ul>
             </div>
         </div>
-        <ul id="menu">
-            <li>
-                <a href="http://localhost:1313/tags" title="Tags">
-                    <span>Tags</span>
-                </a>
-            </li>
-        </ul>
-    </nav>
-</header>
-<main class="main">
-
-<article class="post-single">
-  <header class="post-header">
-    <div class="breadcrumbs"><a href="http://localhost:1313/">Home</a>&nbsp;»&nbsp;<a href="http://localhost:1313/posts/">Posts</a></div>
-    <h1 class="post-title entry-hint-parent">
-      Prefetch Files
-    </h1>
-    <div class="post-description">
-      An analysis of Windows Prefetch files, their structure, forensic significance, and decompression process.
     </div>
-    <div class="post-meta"><span title='2025-06-12 09:54:09 +0530 IST'>June 12, 2025</span>&nbsp;·&nbsp;4 min&nbsp;·&nbsp;5h4rrk
+</nav><div id="content" class="container">
 
-</div>
-  </header> <div class="toc">
-    <details >
-        <summary accesskey="c" title="(Alt + C)">
-            <span class="details">Table of Contents</span>
-        </summary>
-
-        <div class="inner"><ul>
-                <li>
-                    <a href="#prefetch-files" aria-label="Prefetch Files">Prefetch Files</a><ul>
-                        
-                <li>
-                    <a href="#prefetch-file-structure" aria-label="Prefetch File Structure">Prefetch File Structure</a><ul>
-                        
-                <li>
-                    <a href="#compressed-format" aria-label="Compressed Format">Compressed Format</a><ul>
-                        
-                <li>
-                    <a href="#overview-of-compressed-prefetch-file" aria-label="Overview of Compressed Prefetch file">Overview of Compressed Prefetch file</a></li>
-                <li>
-                    <a href="#decompressing-it" aria-label="Decompressing It">Decompressing It</a>
-                </li>
-            </ul>
-            </li>
-            </ul>
-            </li>
-            </ul>
-            </li>
-            </ul>
-        </div>
-    </details>
-</div>
-
-  <div class="post-content"><h1 id="prefetch-files">Prefetch Files<a hidden class="anchor" aria-hidden="true" href="#prefetch-files">#</a></h1>
+<div class="row-fluid navmargin">
+    <div class="page-header">
+        <h1>Prefetch Files - Thu, Jun 12, 2025</h1>
+    </div>
+    <p class="lead">An analysis of Windows Prefetch files, their structure, forensic significance, and decompression process.</p>
+    <h1 id="prefetch-files">Prefetch Files</h1>
 <p>Prefetch files are created by Windows to speed up the loading process by caching the neccessary data. When we fire up a process, it will cache the details like files accessed and stores it in small file i.e. prefetch files under <code>Prefetch</code> subfolder in <code>Windows</code>. When the application is opened for the next time, it will load the files accessed. Windows Prefetch files are located in <code>C:\Windows\Prefetch\*.pf</code>. From forensic perspective, it provides various valuable information like</p>
 <ul>
 <li>Executable Name</li>
@@ -238,7 +55,7 @@
 <li>Files accessed</li>
 <li>Directories accessed</li>
 </ul>
-<p><img alt="Prefetch" loading="lazy" src="/posts/prefetch/image-1.png"></p>
+<p><img src="/posts/prefetch/image-1.png" alt="Prefetch"></p>
 <div class="highlight"><pre tabindex="0" class="chroma"><code class="language-python" data-lang="python"><span class="line"><span class="cl"><span class="n">prefetch_settings</span> <span class="o">=</span> <span class="p">{</span>
 </span></span><span class="line"><span class="cl">    <span class="mi">0</span><span class="p">:</span> <span class="s2">&#34;Prefetch-Disabled&#34;</span><span class="p">,</span>
 </span></span><span class="line"><span class="cl">    <span class="mi">1</span><span class="p">:</span> <span class="s2">&#34;Application-Prefetch-Enabled&#34;</span><span class="p">,</span>
@@ -253,9 +70,9 @@
 </ul>
 </li>
 </ul>
-<h2 id="prefetch-file-structure">Prefetch File Structure<a hidden class="anchor" aria-hidden="true" href="#prefetch-file-structure">#</a></h2>
+<h2 id="prefetch-file-structure">Prefetch File Structure</h2>
 <p>Windows Prefetch files are compressed and stored in <code>.pf</code> format. To obtain the information, we need to decompress it first.</p>
-<h3 id="compressed-format">Compressed Format<a hidden class="anchor" aria-hidden="true" href="#compressed-format">#</a></h3>
+<h3 id="compressed-format">Compressed Format</h3>
 <ul>
 <li>Compressed Header ( 0x4 bytes)</li>
 <li>Uncompressed Size ( 0x4 bytes)</li>
@@ -264,7 +81,7 @@
 </ul>
 <p>Compressed Header: <code>0x4D414D04</code> (<code>MAM\x04</code>)</p>
 <p>CRC32 is an optional either it will present or absent.</p>
-<h4 id="overview-of-compressed-prefetch-file">Overview of Compressed Prefetch file<a hidden class="anchor" aria-hidden="true" href="#overview-of-compressed-prefetch-file">#</a></h4>
+<h4 id="overview-of-compressed-prefetch-file">Overview of Compressed Prefetch file</h4>
 <div style="display: flex; gap: 10px; align-items: center;">
   <div>
     <p><strong>Without CRC32</strong></p>
@@ -279,7 +96,7 @@
     </a>
   </div>
 </div>
-<h4 id="decompressing-it">Decompressing It<a hidden class="anchor" aria-hidden="true" href="#decompressing-it">#</a></h4>
+<h4 id="decompressing-it">Decompressing It</h4>
 <p><code>PrefetchDecompress.cpp</code></p>
 <div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="c1">// PrefetchDecompress.cpp : This file contains the &#39;main&#39; function. Program
 </span></span></span><span class="line"><span class="cl"><span class="c1">// execution begins and ends there.
@@ -449,216 +266,61 @@
 </span></span><span class="line"><span class="cl">  <span class="nf">CleanPrefetch</span><span class="p">(</span><span class="o">&amp;</span><span class="n">prefetch</span><span class="p">,</span> <span class="n">CompressBufferWorkSpaceSize</span><span class="p">);</span>
 </span></span><span class="line"><span class="cl">  <span class="n">std</span><span class="o">::</span><span class="nf">println</span><span class="p">(</span><span class="s">&#34;Done&#34;</span><span class="p">);</span>
 </span></span><span class="line"><span class="cl"><span class="p">}</span>
-</span></span></code></pre></div><p><img alt="DecompressedFile" loading="lazy" src="/posts/prefetch/image-3.png"></p>
+</span></span></code></pre></div><p><img src="/posts/prefetch/image-3.png" alt="DecompressedFile"></p>
+
+    <h4><a href="http://localhost:1313/">Back to Home</a></h4>
+</div>
 
 
-  </div>
+        </div><footer class="container">
+    <hr class="soften">
+    <p>
+&copy; 
 
-  <footer class="post-footer">
-    <ul class="post-tags">
-      <li><a href="http://localhost:1313/tags/windows-prefetch/">Windows Prefetch</a></li>
-      <li><a href="http://localhost:1313/tags/windows-forensics/">Windows Forensics</a></li>
-      <li><a href="http://localhost:1313/tags/digital-forensics/">Digital Forensics</a></li>
-      <li><a href="http://localhost:1313/tags/prefetch-file-analysis/">Prefetch File Analysis</a></li>
-      <li><a href="http://localhost:1313/tags/prefetch-parser/">Prefetch Parser</a></li>
-      <li><a href="http://localhost:1313/tags/windows-performance/">Windows Performance</a></li>
-    </ul>
-<nav class="paginav">
-  <a class="next" href="http://localhost:1313/posts/windows-bigpools/windows-bigpools/">
-    <span class="title">Next »</span>
-    <br>
-    <span>Windows Bigpools</span>
-  </a>
-</nav>
-
-
-<ul class="share-buttons">
-    <li>
-        <a target="_blank" rel="noopener noreferrer" aria-label="share Prefetch Files on x"
-            href="https://x.com/intent/tweet/?text=Prefetch%20Files&amp;url=http%3a%2f%2flocalhost%3a1313%2fposts%2fprefetch%2fprefetch%2f&amp;hashtags=WindowsPrefetch%2cWindowsForensics%2cDigitalForensics%2cPrefetchFileAnalysis%2cPrefetchParser%2cWindowsPerformance">
-            <svg version="1.1" viewBox="0 0 512 512" xml:space="preserve" height="30px" width="30px" fill="currentColor">
-                <path
-                    d="M512 62.554 L 512 449.446 C 512 483.97 483.97 512 449.446 512 L 62.554 512 C 28.03 512 0 483.97 0 449.446 L 0 62.554 C 0 28.03 28.029 0 62.554 0 L 449.446 0 C 483.971 0 512 28.03 512 62.554 Z M 269.951 190.75 L 182.567 75.216 L 56 75.216 L 207.216 272.95 L 63.9 436.783 L 125.266 436.783 L 235.9 310.383 L 332.567 436.783 L 456 436.783 L 298.367 228.367 L 432.367 75.216 L 371.033 75.216 Z M 127.633 110 L 164.101 110 L 383.481 400.065 L 349.5 400.065 Z" />
-            </svg>
-        </a>
-    </li>
-    <li>
-        <a target="_blank" rel="noopener noreferrer" aria-label="share Prefetch Files on linkedin"
-            href="https://www.linkedin.com/shareArticle?mini=true&amp;url=http%3a%2f%2flocalhost%3a1313%2fposts%2fprefetch%2fprefetch%2f&amp;title=Prefetch%20Files&amp;summary=Prefetch%20Files&amp;source=http%3a%2f%2flocalhost%3a1313%2fposts%2fprefetch%2fprefetch%2f">
-            <svg version="1.1" viewBox="0 0 512 512" xml:space="preserve" height="30px" width="30px" fill="currentColor">
-                <path
-                    d="M449.446,0c34.525,0 62.554,28.03 62.554,62.554l0,386.892c0,34.524 -28.03,62.554 -62.554,62.554l-386.892,0c-34.524,0 -62.554,-28.03 -62.554,-62.554l0,-386.892c0,-34.524 28.029,-62.554 62.554,-62.554l386.892,0Zm-288.985,423.278l0,-225.717l-75.04,0l0,225.717l75.04,0Zm270.539,0l0,-129.439c0,-69.333 -37.018,-101.586 -86.381,-101.586c-39.804,0 -57.634,21.891 -67.617,37.266l0,-31.958l-75.021,0c0.995,21.181 0,225.717 0,225.717l75.02,0l0,-126.056c0,-6.748 0.486,-13.492 2.474,-18.315c5.414,-13.475 17.767,-27.434 38.494,-27.434c27.135,0 38.007,20.707 38.007,51.037l0,120.768l75.024,0Zm-307.552,-334.556c-25.674,0 -42.448,16.879 -42.448,39.002c0,21.658 16.264,39.002 41.455,39.002l0.484,0c26.165,0 42.452,-17.344 42.452,-39.002c-0.485,-22.092 -16.241,-38.954 -41.943,-39.002Z" />
-            </svg>
-        </a>
-    </li>
-    <li>
-        <a target="_blank" rel="noopener noreferrer" aria-label="share Prefetch Files on reddit"
-            href="https://reddit.com/submit?url=http%3a%2f%2flocalhost%3a1313%2fposts%2fprefetch%2fprefetch%2f&title=Prefetch%20Files">
-            <svg version="1.1" viewBox="0 0 512 512" xml:space="preserve" height="30px" width="30px" fill="currentColor">
-                <path
-                    d="M449.446,0c34.525,0 62.554,28.03 62.554,62.554l0,386.892c0,34.524 -28.03,62.554 -62.554,62.554l-386.892,0c-34.524,0 -62.554,-28.03 -62.554,-62.554l0,-386.892c0,-34.524 28.029,-62.554 62.554,-62.554l386.892,0Zm-3.446,265.638c0,-22.964 -18.616,-41.58 -41.58,-41.58c-11.211,0 -21.361,4.457 -28.841,11.666c-28.424,-20.508 -67.586,-33.757 -111.204,-35.278l18.941,-89.121l61.884,13.157c0.756,15.734 13.642,28.29 29.56,28.29c16.407,0 29.706,-13.299 29.706,-29.701c0,-16.403 -13.299,-29.702 -29.706,-29.702c-11.666,0 -21.657,6.792 -26.515,16.578l-69.105,-14.69c-1.922,-0.418 -3.939,-0.042 -5.585,1.036c-1.658,1.073 -2.811,2.761 -3.224,4.686l-21.152,99.438c-44.258,1.228 -84.046,14.494 -112.837,35.232c-7.468,-7.164 -17.589,-11.591 -28.757,-11.591c-22.965,0 -41.585,18.616 -41.585,41.58c0,16.896 10.095,31.41 24.568,37.918c-0.639,4.135 -0.99,8.328 -0.99,12.576c0,63.977 74.469,115.836 166.33,115.836c91.861,0 166.334,-51.859 166.334,-115.836c0,-4.218 -0.347,-8.387 -0.977,-12.493c14.564,-6.47 24.735,-21.034 24.735,-38.001Zm-119.474,108.193c-20.27,20.241 -59.115,21.816 -70.534,21.816c-11.428,0 -50.277,-1.575 -70.522,-21.82c-3.007,-3.008 -3.007,-7.882 0,-10.889c3.003,-2.999 7.882,-3.003 10.885,0c12.777,12.781 40.11,17.317 59.637,17.317c19.522,0 46.86,-4.536 59.657,-17.321c3.016,-2.999 7.886,-2.995 10.885,0.008c3.008,3.011 3.003,7.882 -0.008,10.889Zm-5.23,-48.781c-16.373,0 -29.701,-13.324 -29.701,-29.698c0,-16.381 13.328,-29.714 29.701,-29.714c16.378,0 29.706,13.333 29.706,29.714c0,16.374 -13.328,29.698 -29.706,29.698Zm-160.386,-29.702c0,-16.381 13.328,-29.71 29.714,-29.71c16.369,0 29.689,13.329 29.689,29.71c0,16.373 -13.32,29.693 -29.689,29.693c-16.386,0 -29.714,-13.32 -29.714,-29.693Z" />
-            </svg>
-        </a>
-    </li>
-    <li>
-        <a target="_blank" rel="noopener noreferrer" aria-label="share Prefetch Files on facebook"
-            href="https://facebook.com/sharer/sharer.php?u=http%3a%2f%2flocalhost%3a1313%2fposts%2fprefetch%2fprefetch%2f">
-            <svg version="1.1" viewBox="0 0 512 512" xml:space="preserve" height="30px" width="30px" fill="currentColor">
-                <path
-                    d="M449.446,0c34.525,0 62.554,28.03 62.554,62.554l0,386.892c0,34.524 -28.03,62.554 -62.554,62.554l-106.468,0l0,-192.915l66.6,0l12.672,-82.621l-79.272,0l0,-53.617c0,-22.603 11.073,-44.636 46.58,-44.636l36.042,0l0,-70.34c0,0 -32.71,-5.582 -63.982,-5.582c-65.288,0 -107.96,39.569 -107.96,111.204l0,62.971l-72.573,0l0,82.621l72.573,0l0,192.915l-191.104,0c-34.524,0 -62.554,-28.03 -62.554,-62.554l0,-386.892c0,-34.524 28.029,-62.554 62.554,-62.554l386.892,0Z" />
-            </svg>
-        </a>
-    </li>
-    <li>
-        <a target="_blank" rel="noopener noreferrer" aria-label="share Prefetch Files on whatsapp"
-            href="https://api.whatsapp.com/send?text=Prefetch%20Files%20-%20http%3a%2f%2flocalhost%3a1313%2fposts%2fprefetch%2fprefetch%2f">
-            <svg version="1.1" viewBox="0 0 512 512" xml:space="preserve" height="30px" width="30px" fill="currentColor">
-                <path
-                    d="M449.446,0c34.525,0 62.554,28.03 62.554,62.554l0,386.892c0,34.524 -28.03,62.554 -62.554,62.554l-386.892,0c-34.524,0 -62.554,-28.03 -62.554,-62.554l0,-386.892c0,-34.524 28.029,-62.554 62.554,-62.554l386.892,0Zm-58.673,127.703c-33.842,-33.881 -78.847,-52.548 -126.798,-52.568c-98.799,0 -179.21,80.405 -179.249,179.234c-0.013,31.593 8.241,62.428 23.927,89.612l-25.429,92.884l95.021,-24.925c26.181,14.28 55.659,21.807 85.658,21.816l0.074,0c98.789,0 179.206,-80.413 179.247,-179.243c0.018,-47.895 -18.61,-92.93 -52.451,-126.81Zm-126.797,275.782l-0.06,0c-26.734,-0.01 -52.954,-7.193 -75.828,-20.767l-5.441,-3.229l-56.386,14.792l15.05,-54.977l-3.542,-5.637c-14.913,-23.72 -22.791,-51.136 -22.779,-79.287c0.033,-82.142 66.867,-148.971 149.046,-148.971c39.793,0.014 77.199,15.531 105.329,43.692c28.128,28.16 43.609,65.592 43.594,105.4c-0.034,82.149 -66.866,148.983 -148.983,148.984Zm81.721,-111.581c-4.479,-2.242 -26.499,-13.075 -30.604,-14.571c-4.105,-1.495 -7.091,-2.241 -10.077,2.241c-2.986,4.483 -11.569,14.572 -14.182,17.562c-2.612,2.988 -5.225,3.364 -9.703,1.12c-4.479,-2.241 -18.91,-6.97 -36.017,-22.23c-13.314,-11.876 -22.304,-26.542 -24.916,-31.026c-2.612,-4.484 -0.279,-6.908 1.963,-9.14c2.016,-2.007 4.48,-5.232 6.719,-7.847c2.24,-2.615 2.986,-4.484 4.479,-7.472c1.493,-2.99 0.747,-5.604 -0.374,-7.846c-1.119,-2.241 -10.077,-24.288 -13.809,-33.256c-3.635,-8.733 -7.327,-7.55 -10.077,-7.688c-2.609,-0.13 -5.598,-0.158 -8.583,-0.158c-2.986,0 -7.839,1.121 -11.944,5.604c-4.105,4.484 -15.675,15.32 -15.675,37.364c0,22.046 16.048,43.342 18.287,46.332c2.24,2.99 31.582,48.227 76.511,67.627c10.685,4.615 19.028,7.371 25.533,9.434c10.728,3.41 20.492,2.929 28.209,1.775c8.605,-1.285 26.499,-10.833 30.231,-21.295c3.732,-10.464 3.732,-19.431 2.612,-21.298c-1.119,-1.869 -4.105,-2.99 -8.583,-5.232Z" />
-            </svg>
-        </a>
-    </li>
-    <li>
-        <a target="_blank" rel="noopener noreferrer" aria-label="share Prefetch Files on telegram"
-            href="https://telegram.me/share/url?text=Prefetch%20Files&amp;url=http%3a%2f%2flocalhost%3a1313%2fposts%2fprefetch%2fprefetch%2f">
-            <svg version="1.1" xml:space="preserve" viewBox="2 2 28 28" height="30px" width="30px" fill="currentColor">
-                <path
-                    d="M26.49,29.86H5.5a3.37,3.37,0,0,1-2.47-1,3.35,3.35,0,0,1-1-2.47V5.48A3.36,3.36,0,0,1,3,3,3.37,3.37,0,0,1,5.5,2h21A3.38,3.38,0,0,1,29,3a3.36,3.36,0,0,1,1,2.46V26.37a3.35,3.35,0,0,1-1,2.47A3.38,3.38,0,0,1,26.49,29.86Zm-5.38-6.71a.79.79,0,0,0,.85-.66L24.73,9.24a.55.55,0,0,0-.18-.46.62.62,0,0,0-.41-.17q-.08,0-16.53,6.11a.59.59,0,0,0-.41.59.57.57,0,0,0,.43.52l4,1.24,1.61,4.83a.62.62,0,0,0,.63.43.56.56,0,0,0,.4-.17L16.54,20l4.09,3A.9.9,0,0,0,21.11,23.15ZM13.8,20.71l-1.21-4q8.72-5.55,8.78-5.55c.15,0,.23,0,.23.16a.18.18,0,0,1,0,.06s-2.51,2.3-7.52,6.8Z" />
-            </svg>
-        </a>
-    </li>
-    <li>
-        <a target="_blank" rel="noopener noreferrer" aria-label="share Prefetch Files on ycombinator"
-            href="https://news.ycombinator.com/submitlink?t=Prefetch%20Files&u=http%3a%2f%2flocalhost%3a1313%2fposts%2fprefetch%2fprefetch%2f">
-            <svg version="1.1" xml:space="preserve" width="30px" height="30px" viewBox="0 0 512 512" fill="currentColor"
-                xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape">
-                <path
-                    d="M449.446 0C483.971 0 512 28.03 512 62.554L512 449.446C512 483.97 483.97 512 449.446 512L62.554 512C28.03 512 0 483.97 0 449.446L0 62.554C0 28.03 28.029 0 62.554 0L449.446 0ZM183.8767 87.9921H121.8427L230.6673 292.4508V424.0079H281.3328V292.4508L390.1575 87.9921H328.1233L256 238.2489z" />
-            </svg>
-        </a>
-    </li>
-</ul>
-
-  </footer>
-</article>
-    </main>
     
-<footer class="footer">
-        <span>&copy; 2025 <a href="http://localhost:1313/">shark.exe</a></span> · 
 
-    <span>
-        Powered by
-        <a href="https://gohugo.io/" rel="noopener noreferrer" target="_blank">Hugo</a> &
-        <a href="https://github.com/adityatelange/hugo-PaperMod/" rel="noopener" target="_blank">PaperMod</a>
-    </span>
+<span id="thisyear">2026</span>
+
+
+</p>
+    <p class="text-center">
+        
+        
+        
+        
+        
+    </p>
 </footer>
-<a href="#top" aria-label="go to top" title="Go to Top (Alt + G)" class="top-link" id="top-link" accesskey="g">
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 6" fill="currentColor">
-        <path d="M12 6H0l6-6z" />
-    </svg>
-</a>
 
+</body><link rel="stylesheet" href="/css/bootstrap.css">
+<link rel="stylesheet" href="/css/bootstrap-responsive.css">
+<link rel="stylesheet" href="/css/style.css">
+
+<script src="/js/jquery.js"></script>
+<script src="/js/bootstrap-386.js"></script>
+<script src="/js/bootstrap-transition.js"></script>
+<script src="/js/bootstrap-alert.js"></script>
+<script src="/js/bootstrap-modal.js"></script>
+<script src="/js/bootstrap-dropdown.js"></script>
+<script src="/js/bootstrap-scrollspy.js"></script>
+<script src="/js/bootstrap-tab.js"></script>
+<script src="/js/bootstrap-tooltip.js"></script>
+<script src="/js/bootstrap-popover.js"></script>
+<script src="/js/bootstrap-button.js"></script>
+<script src="/js/bootstrap-collapse.js"></script>
+<script src="/js/bootstrap-carousel.js"></script>
+<script src="/js/bootstrap-typeahead.js"></script>
+<script src="/js/bootstrap-affix.js"></script>
 <script>
-    let menu = document.getElementById('menu')
-    if (menu) {
-        menu.scrollLeft = localStorage.getItem("menu-scroll-position");
-        menu.onscroll = function () {
-            localStorage.setItem("menu-scroll-position", menu.scrollLeft);
-        }
-    }
-
-    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-        anchor.addEventListener("click", function (e) {
-            e.preventDefault();
-            var id = this.getAttribute("href").substr(1);
-            if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView({
-                    behavior: "smooth"
-                });
-            } else {
-                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView();
-            }
-            if (id === "top") {
-                history.replaceState(null, null, " ");
-            } else {
-                history.pushState(null, null, `#${id}`);
-            }
-        });
-    });
-
-</script>
-<script>
-    var mybutton = document.getElementById("top-link");
-    window.onscroll = function () {
-        if (document.body.scrollTop > 800 || document.documentElement.scrollTop > 800) {
-            mybutton.style.visibility = "visible";
-            mybutton.style.opacity = "1";
-        } else {
-            mybutton.style.visibility = "hidden";
-            mybutton.style.opacity = "0";
-        }
+    _386 = { 
+        fastLoad: null ,
+        onePass: null , 
+        speedFactor: 10 
     };
 
+    
+    function ThisYear() {
+        document.getElementById('thisyear').innerHTML = new Date().getFullYear();
+    };
 </script>
-<script>
-    document.getElementById("theme-toggle").addEventListener("click", () => {
-        if (document.body.className.includes("dark")) {
-            document.body.classList.remove('dark');
-            localStorage.setItem("pref-theme", 'light');
-        } else {
-            document.body.classList.add('dark');
-            localStorage.setItem("pref-theme", 'dark');
-        }
-    })
-
-</script>
-<script>
-    document.querySelectorAll('pre > code').forEach((codeblock) => {
-        const container = codeblock.parentNode.parentNode;
-
-        const copybutton = document.createElement('button');
-        copybutton.classList.add('copy-code');
-        copybutton.innerHTML = 'copy';
-
-        function copyingDone() {
-            copybutton.innerHTML = 'copied!';
-            setTimeout(() => {
-                copybutton.innerHTML = 'copy';
-            }, 2000);
-        }
-
-        copybutton.addEventListener('click', (cb) => {
-            if ('clipboard' in navigator) {
-                navigator.clipboard.writeText(codeblock.textContent);
-                copyingDone();
-                return;
-            }
-
-            const range = document.createRange();
-            range.selectNodeContents(codeblock);
-            const selection = window.getSelection();
-            selection.removeAllRanges();
-            selection.addRange(range);
-            try {
-                document.execCommand('copy');
-                copyingDone();
-            } catch (e) { };
-            selection.removeRange(range);
-        });
-
-        if (container.classList.contains("highlight")) {
-            container.appendChild(copybutton);
-        } else if (container.parentNode.firstChild == container) {
-            
-        } else if (codeblock.parentNode.parentNode.parentNode.parentNode.parentNode.nodeName == "TABLE") {
-            
-            codeblock.parentNode.parentNode.parentNode.parentNode.parentNode.appendChild(copybutton);
-        } else {
-            
-            codeblock.parentNode.appendChild(copybutton);
-        }
-    });
-</script>
-</body>
-
 </html>

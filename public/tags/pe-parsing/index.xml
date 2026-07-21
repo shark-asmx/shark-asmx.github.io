@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes"?>
-<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/">
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
-    <title>PE Parsing on shark.exe</title>
+    <title>PE Parsing on shark-asmx</title>
     <link>http://localhost:1313/tags/pe-parsing/</link>
-    <description>Recent content in PE Parsing on shark.exe</description>
-    <generator>Hugo -- 0.147.8</generator>
+    <description>Recent content in PE Parsing on shark-asmx</description>
+    <generator>Hugo</generator>
     <language>en</language>
     <lastBuildDate>Sun, 12 Jan 2025 00:00:00 +0000</lastBuildDate>
     <atom:link href="http://localhost:1313/tags/pe-parsing/index.xml" rel="self" type="application/rss+xml" />
@@ -14,13 +14,6 @@
       <pubDate>Sun, 12 Jan 2025 00:00:00 +0000</pubDate>
       <guid>http://localhost:1313/posts/pe-parse-windbg2/</guid>
       <description>Hands on parsing PE files with WinDbg and explore their structures for debugging and reverse engineering.</description>
-    </item>
-    <item>
-      <title>Decoding PE Files A Step-by-Step Guide with WinDbg - Part 1</title>
-      <link>http://localhost:1313/posts/pe-parse-windbg/pe-parse-windbg/</link>
-      <pubDate>Sat, 11 Jan 2025 17:00:50 +0000</pubDate>
-      <guid>http://localhost:1313/posts/pe-parse-windbg/pe-parse-windbg/</guid>
-      <description>Hands-on parsing PE files with WinDbg and exploring their structures for debugging and reverse engineering.</description>
     </item>
     <item>
       <title>PE Parsing: A Step-by-Step Guide with WinDbg - Part 1</title>

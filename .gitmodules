@@ -7,3 +7,6 @@
 [submodule "themes/hugo-theme-re-terminal"]
 	path = themes/hugo-theme-re-terminal
 	url = https://github.com/5h4rrk/hugo-theme-re-terminal
+[submodule "themes/hugo.386"]
+	path = themes/hugo.386
+	url = https://github.com/shark-asmx/hugo.386.git

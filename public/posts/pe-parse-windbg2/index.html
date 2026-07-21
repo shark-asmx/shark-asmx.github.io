@@ -1,254 +1,47 @@
 <!DOCTYPE html>
-<html lang="en" dir="auto">
-
-<head><script src="/livereload.js?mindelay=10&amp;v=2&amp;port=1313&amp;path=livereload" data-no-instant defer></script><meta charset="utf-8">
-<meta http-equiv="X-UA-Compatible" content="IE=edge">
-<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<meta name="robots" content="index, follow">
-<title>PE Parsing: A Step-by-Step Guide with WinDbg - Part 2 | shark.exe</title>
-<meta name="keywords" content="WinDbg, PE, Portable Executable, PE Parsing, Debugging, Reverse Engineering, Windows Internals">
-<meta name="description" content="Hands on parsing PE files with WinDbg and explore their structures for debugging and reverse engineering.">
-<meta name="author" content="5h4rrk">
-<link rel="canonical" href="http://localhost:1313/posts/pe-parse-windbg2/">
-<link crossorigin="anonymous" href="/assets/css/stylesheet.180f19e094a50e5c790e9ddd948e1a18e5dc254c922bb069dceb5480237cf06c.css" integrity="sha256-GA8Z4JSlDlx5Dp3dlI4aGOXcJUySK7Bp3OtUgCN88Gw=" rel="preload stylesheet" as="style">
-<link rel="icon" href="http://localhost:1313/favicon.ico">
-<link rel="icon" type="image/png" sizes="16x16" href="http://localhost:1313/favicon-16x16.png">
-<link rel="icon" type="image/png" sizes="32x32" href="http://localhost:1313/favicon-32x32.png">
-<link rel="apple-touch-icon" href="http://localhost:1313/apple-touch-icon.png">
-<link rel="mask-icon" href="http://localhost:1313/safari-pinned-tab.svg">
-<meta name="theme-color" content="#2e2e33">
-<meta name="msapplication-TileColor" content="#2e2e33">
-<link rel="alternate" hreflang="en" href="http://localhost:1313/posts/pe-parse-windbg2/">
-<noscript>
-    <style>
-        #theme-toggle,
-        .top-link {
-            display: none;
-        }
-
-    </style>
-    <style>
-        @media (prefers-color-scheme: dark) {
-            :root {
-                --theme: rgb(29, 30, 32);
-                --entry: rgb(46, 46, 51);
-                --primary: rgb(218, 218, 219);
-                --secondary: rgb(155, 156, 157);
-                --tertiary: rgb(65, 66, 68);
-                --content: rgb(196, 196, 197);
-                --code-block-bg: rgb(46, 46, 51);
-                --code-bg: rgb(55, 56, 62);
-                --border: rgb(51, 51, 51);
-            }
-
-            .list {
-                background: var(--theme);
-            }
-
-            .list:not(.dark)::-webkit-scrollbar-track {
-                background: 0 0;
-            }
-
-            .list:not(.dark)::-webkit-scrollbar-thumb {
-                border-color: var(--theme);
-            }
-        }
-
-    </style>
-</noscript><meta property="og:url" content="http://localhost:1313/posts/pe-parse-windbg2/">
-  <meta property="og:site_name" content="shark.exe">
-  <meta property="og:title" content="PE Parsing: A Step-by-Step Guide with WinDbg - Part 2">
-  <meta property="og:description" content="Hands on parsing PE files with WinDbg and explore their structures for debugging and reverse engineering.">
-  <meta property="og:locale" content="en">
-  <meta property="og:type" content="article">
-    <meta property="article:section" content="posts">
-    <meta property="article:published_time" content="2025-01-12T00:00:00+00:00">
-    <meta property="article:modified_time" content="2025-01-12T00:00:00+00:00">
-    <meta property="article:tag" content="WinDbg">
-    <meta property="article:tag" content="PE">
-    <meta property="article:tag" content="Portable Executable">
-    <meta property="article:tag" content="PE Parsing">
-    <meta property="article:tag" content="Debugging">
-    <meta property="article:tag" content="Reverse Engineering">
-<meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="PE Parsing: A Step-by-Step Guide with WinDbg - Part 2">
-<meta name="twitter:description" content="Hands on parsing PE files with WinDbg and explore their structures for debugging and reverse engineering.">
-
-
-<script type="application/ld+json">
-{
-  "@context": "https://schema.org",
-  "@type": "BreadcrumbList",
-  "itemListElement": [
-    {
-      "@type": "ListItem",
-      "position":  1 ,
-      "name": "Posts",
-      "item": "http://localhost:1313/posts/"
-    }, 
-    {
-      "@type": "ListItem",
-      "position":  2 ,
-      "name": "PE Parsing: A Step-by-Step Guide with WinDbg - Part 2",
-      "item": "http://localhost:1313/posts/pe-parse-windbg2/"
-    }
-  ]
-}
-</script>
-<script type="application/ld+json">
-{
-  "@context": "https://schema.org",
-  "@type": "BlogPosting",
-  "headline": "PE Parsing: A Step-by-Step Guide with WinDbg - Part 2",
-  "name": "PE Parsing: A Step-by-Step Guide with WinDbg - Part 2",
-  "description": "Hands on parsing PE files with WinDbg and explore their structures for debugging and reverse engineering.",
-  "keywords": [
-    "WinDbg", "PE", "Portable Executable", "PE Parsing", "Debugging", "Reverse Engineering", "Windows Internals"
-  ],
-  "articleBody": "PE Import Directory Parsing 0: kd\u003e !process 0 0 msedge.exe PROCESS ffff81822cc0a080 SessionId: 1 Cid: 0f08 Peb: dbc4685000 ParentCid: 1b48 DirBase: 3f0ae002 ObjectTable: ffffcc89acaf8e40 HandleCount: 175. Image: msedge.exe 0: kd\u003e .process /p /r ffff81822cc0a080 Implicit process is now ffff8182`2cc0a080 .cache forcedecodeuser done Loading User Symbols ....................... 0: kd\u003e lm v m HTTP Browse full module list start end module name fffff800`15e50000 fffff800`15fd8000 HTTP (no symbols) Loaded symbol image file: HTTP.sys Mapped memory image file: c:\\programdata\\dbg\\sym\\HTTP.sys\\43E8008A188000\\HTTP.sys Image path: \\SystemRoot\\system32\\drivers\\HTTP.sys Image name: HTTP.sys Browse all global symbols functions data Symbol Reload Image was built with /Brepro flag. Timestamp: 43E8008A (This is a reproducible build file hash, not a timestamp) CheckSum: 00188BE7 ImageSize: 00188000 Translations: 0000.04b0 0000.04e4 0409.04b0 0409.04e4 Information from resource tables: ImageName : HTTP.sys\nImageBaseAddress : fffff80015e5000\n/Brepo flag : In the context of building C/C++ application, it is related to incremental linking and dependency tracking.\nParsing it Manually _IMAGE_DOS_HEADER 0: kd\u003e db fffff800`15e50000 fffff800`15e50000 4d 5a 90 00 03 00 00 00-04 00 00 00 ff ff 00 00 MZ.............. fffff800`15e50010 b8 00 00 00 00 00 00 00-40 00 00 00 00 00 00 00 ........@....... fffff800`15e50020 00 00 00 00 00 00 00 00-00 00 00 00 00 00 00 00 ................ fffff800`15e50030 00 00 00 00 00 00 00 00-00 00 00 00 d8 00 00 00 ................ 0: kd\u003e dt combase!_IMAGE_DOS_HEADER fffff800`15e50000 +0x000 e_magic : 0x5a4d +0x002 e_cblp : 0x90 +0x004 e_cp : 3 +0x006 e_crlc : 0 +0x008 e_cparhdr : 4 +0x00a e_minalloc : 0 +0x00c e_maxalloc : 0xffff +0x00e e_ss : 0 +0x010 e_sp : 0xb8 +0x012 e_csum : 0 +0x014 e_ip : 0 +0x016 e_cs : 0 +0x018 e_lfarlc : 0x40 +0x01a e_ovno : 0 +0x01c e_res : [4] 0 +0x024 e_oemid : 0 +0x026 e_oeminfo : 0 +0x028 e_res2 : [10] 0 +0x03c e_lfanew : 0n216 0: kd\u003e ? 0n216 Evaluate expression: 216 = 00000000`000000d8 DOS STUB \u0026 RICH HEADER fffff807`2a4a0040 0e 1f ba 0e 00 b4 09 cd-21 b8 01 4c cd 21 54 68 ........!..L.!Th fffff807`2a4a0050 69 73 20 70 72 6f 67 72-61 6d 20 63 61 6e 6e 6f is program canno fffff807`2a4a0060 74 20 62 65 20 72 75 6e-20 69 6e 20 44 4f 53 20 t be run in DOS fffff807`2a4a0070 6d 6f 64 65 2e 0d 0d 0a-24 00 00 00 00 00 00 00 mode....$....... fffff807`2a4a0080 bd 0a c4 77 f9 6b aa 24-f9 6b aa 24 f9 6b aa 24 ...w.k.$.k.$.k.$ fffff807`2a4a0090 f9 6b ab 24 53 6a aa 24-ed 00 ab 25 f6 6b aa 24 .k.$Sj.$...%.k.$ fffff807`2a4a00a0 ed 00 ae 25 f0 6b aa 24-ed 00 a9 25 fc 6b aa 24 ...%.k.$...%.k.$ fffff807`2a4a00b0 ed 00 a7 25 96 6b aa 24-ed 00 55 24 f8 6b aa 24 ...%.k.$..U$.k.$ fffff807`2a4a00c0 ed 00 a8 25 f8 6b aa 24-52 69 63 68 f9 6b aa 24 ...%.k.$Rich.k.$ fffff807`2a4a00d0 00 00 00 00 00 00 00 00 ........ _IMAGE_NT_HEADERS64 0: kd\u003e dt combase!_IMAGE_NT_HEADERS64 (fffff800`15e50000 + 0xd8) +0x000 Signature : 0x4550 +0x004 FileHeader : _IMAGE_FILE_HEADER +0x018 OptionalHeader : _IMAGE_OPTIONAL_HEADER64 _IMAGE_FILE_HEADER 0: kd\u003e dt combase!_IMAGE_FILE_HEADER (fffff800`15e50000 + 0xd8 + 0x4) +0x000 Machine : 0x8664 +0x002 NumberOfSections : 0xe +0x004 TimeDateStamp : 0x43e8008a +0x008 PointerToSymbolTable : 0 +0x00c NumberOfSymbols : 0 +0x010 SizeOfOptionalHeader : 0xf0 +0x012 Characteristics : 0x22 DLL Characteristics 0: kd\u003e .formats 0x22 Evaluate expression: Hex: 00000000`00000022 Decimal: 34 Decimal (unsigned) : 34 Octal: 0000000000000000000042 Binary: 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00100010 Chars: .......\" Time: Thu Jan 1 05:30:34 1970 Float: low 4.76441e-044 high 0 Double: 1.67982e-322 0: kd\u003e ? (0x22 \u0026 0x00f) == 0x40 Evaluate expression: 0 = 00000000`00000000 IMAGE_DYNAMIC_BASE : Disabled 0: kd\u003e ? (0x22 \u0026 0x0f00) == 0x01 Evaluate expression: 0 = 00000000`00000000 DATA_EXECUTION_PREVENTION(DEP) : Disabled 0: kd\u003e ? (0x22 \u0026 0x0f00) == 0x04 Evaluate expression: 0 = 00000000`00000000 STRUCTURED_EXCEPTION_HANDLER: Disabled _IMAGE_OPTIONAL_HEADER64 0: kd\u003e dt combase!_IMAGE_OPTIONAL_HEADER64 (fffff800`15e50000 + 0xd8 + 0x18) +0x000 Magic : 0x20b +0x002 MajorLinkerVersion : 0xe '' +0x003 MinorLinkerVersion : 0x14 '' +0x004 SizeOfCode : 0x126c00 +0x008 SizeOfInitializedData : 0x5b400 +0x00c SizeOfUninitializedData : 0 +0x010 AddressOfEntryPoint : 0x15f010 +0x014 BaseOfCode : 0x1000 +0x018 ImageBase : 0xfffff800`15e50000 +0x020 SectionAlignment : 0x1000 +0x024 FileAlignment : 0x200 +0x028 MajorOperatingSystemVersion : 0xa +0x02a MinorOperatingSystemVersion : 0 +0x02c MajorImageVersion : 0xa +0x02e MinorImageVersion : 0 +0x030 MajorSubsystemVersion : 0xa +0x032 MinorSubsystemVersion : 0 +0x034 Win32VersionValue : 0 +0x038 SizeOfImage : 0x188000 +0x03c SizeOfHeaders : 0x600 +0x040 CheckSum : 0x188be7 +0x044 Subsystem : 1 +0x046 DllCharacteristics : 0x4160 +0x048 SizeOfStackReserve : 0x40000 +0x050 SizeOfStackCommit : 0x1000 +0x058 SizeOfHeapReserve : 0x100000 +0x060 SizeOfHeapCommit : 0x1000 +0x068 LoaderFlags : 0 +0x06c NumberOfRvaAndSizes : 0x10 +0x070 DataDirectory : [16] _IMAGE_DATA_DIRECTORY Export Directory 0: kd\u003e dt combase!_IMAGE_DATA_DIRECTORY (fffff800`15e50000 + 0xd8 + 0x18 + 0x70) +0x000 VirtualAddress : 0 +0x004 Size : 0 Import Directory 0: kd\u003e ?? sizeof(combase!_IMAGE_DATA_DIRECTORY) unsigned int64 8 0: kd\u003e dt combase!_IMAGE_DATA_DIRECTORY (fffff800`15e50000 + 0xd8 + 0x18 + 0x70 + 0x08) +0x000 VirtualAddress : 0x87d90 +0x004 Size : 0xa0 _IMAGE_IMPORT_DESCRIPTOR typedef struct _IMAGE_IMPORT_DESCRIPTOR { union { DWORD Characteristics; // 0 for terminating null import descriptor DWORD OriginalFirstThunk; // Import Address Name Table (INT) } DUMMYUNIONNAME; DWORD TimeDateStamp; // Timestamp when the DLL was bound DWORD ForwarderChain; // Index of the first forwarder chain, or -1 DWORD Name; // ASCII string containing the DLL name DWORD FirstThunk; // Import Address Table (IAT) } IMAGE_IMPORT_DESCRIPTOR, *PIMAGE_IMPORT_DESCRIPTOR; 0: kd\u003e dt combase!_IMAGE_IMPORT_DESCRIPTOR (fffff800`15e50000 + 0x87d90) +0x000 Characteristics : 0x880d0 +0x000 OriginalFirstThunk : 0x880d0 // Points to Import Name Table +0x004 TimeDateStamp : 0 +0x008 ForwarderChain : 0 +0x00c Name : 0x8aa38 // DLL Name +0x010 FirstThunk : 0x872a0 //Points to Import Address Table 0: kd\u003e da (fffff800`15e50000 + 0x8aa38) fffff800`15edaa38 \"ntoskrnl.exe\" NTOSKRNL.EXE 0: kd\u003e dqs (fffff800`15e50000 + 0x880d0) L15C fffff800`15ed80d0 00000000`000893ec fffff800`15ed80d8 00000000`0008940a fffff800`15ed80e0 00000000`00089426 fffff800`15ed80e8 00000000`00089446 fffff800`15ed80f0 00000000`0008945a fffff800`15ed80f8 00000000`00089472 fffff800`15ed8100 00000000`00089480 ..... fffff800`15ed8b88 00000000`0008b438 fffff800`15ed8b90 00000000`0008b460 fffff800`15ed8b98 00000000`0008b488 fffff800`15ed8ba0 00000000`0008b4dc fffff800`15ed8ba8 00000000`00000000 _IMAGE_IMPORT_BY_NAME // Entry 0x00 0: kd\u003e dt combase!_IMAGE_IMPORT_BY_NAME (fffff800`15e50000 + 00000000`000893ec) +0x000 Hint : 0x815 +0x002 Name : [1] \"R\" 0: kd\u003e da (fffff800`15e50000 + 00000000`000893ec) fffff800`15ed93ec \"..RtlEnumerateGenericTableAvl\" // Entry 0x1 0: kd\u003e dt combase!_IMAGE_IMPORT_BY_NAME (fffff800`15e50000 + 00000000`0008940a) +0x000 Hint : 0x4c4 +0x002 Name : [1] \"K\" 0: kd\u003e da (fffff800`15e50000 + 00000000`0008940a) fffff800`15ed940a \"..KeQueryHighestNodeNumber\" //Entry 0x02 0: kd\u003e dt combase!_IMAGE_IMPORT_BY_NAME (fffff800`15e50000 + 00000000`00089426) +0x000 Hint : 0x88f +0x002 Name : [1] \"R\" 0: kd\u003e da (fffff800`15e50000 + 00000000`00089426) fffff800`15ed9426 \"..RtlInitializeGenericTableAvl\" // Entry 0x15a 0: kd\u003e dt combase!_IMAGE_IMPORT_BY_NAME (fffff800`15e50000 + 00000000`0008b4dc) +0x000 Hint : 0xc8 +0x002 Name : [1] \"E\" 0: kd\u003e da (fffff800`15e50000 + 00000000`0008b4dc) fffff800`15edb4dc \".\" 0: kd\u003e da (fffff800`15e50000 + 00000000`0008b4dc+0x02) fffff800`15edb4de \"ExFreeCacheAwareRundownProtectio\" fffff800`15edb4fe \"n\" FirstThunk Parsing // ImageBaseAddress + FirstThunk : kd\u003e db (fffff800`15e50000 +0x872a0) fffff800`15ed72a0 50 f1 96 10 00 f8 ff ff-50 b1 8e 10 00 f8 ff ff P.......P....... fffff800`15ed72b0 30 bd 90 10 00 f8 ff ff-80 40 87 10 00 f8 ff ff 0........@...... fffff800`15ed72c0 70 74 86 10 00 f8 ff ff-90 51 86 10 00 f8 ff ff pt.......Q...... fffff800`15ed72d0 30 74 9e 10 00 f8 ff ff-30 1a 8f 10 00 f8 ff ff 0t......0....... fffff800`15ed72e0 60 6c bf 10 00 f8 ff ff-40 ca c8 10 00 f8 ff ff `l......@....... fffff800`15ed72f0 30 a4 f9 10 00 f8 ff ff-f0 a3 93 10 00 f8 ff ff 0............... fffff800`15ed7300 10 52 94 10 00 f8 ff ff-60 1e 8d 10 00 f8 ff ff .R......`....... fffff800`15ed7310 60 5e 84 10 00 f8 ff ff-90 45 9e 10 00 f8 ff ff `^.......E...... 0: kd\u003e dq (fffff800`15e50000 +0x872a0) fffff800`15ed72a0 fffff800`1096f150 fffff800`108eb150 fffff800`15ed72b0 fffff800`1090bd30 fffff800`10874080 fffff800`15ed72c0 fffff800`10867470 fffff800`10865190 fffff800`15ed72d0 fffff800`109e7430 fffff800`108f1a30 fffff800`15ed72e0 fffff800`10bf6c60 fffff800`10c8ca40 fffff800`15ed72f0 fffff800`10f9a430 fffff800`1093a3f0 fffff800`15ed7300 fffff800`10945210 fffff800`108d1e60 fffff800`15ed7310 fffff800`10845e60 fffff800`109e4590 nt!RtlEnumerateGenericTableAvl: fffff800`1096f150 4883ec28 sub rsp,28h fffff800`1096f154 84d2 test dl,dl fffff800`1096f156 7405 je nt!RtlEnumerateGenericTableAvl+0xd (fffff800`1096f15d) fffff800`1096f158 4883613800 and qword ptr [rcx+38h],0 fffff800`1096f15d 488d5138 lea rdx,[rcx+38h] fffff800`1096f161 e8cac1f9ff call nt!RtlEnumerateGenericTableWithoutSplayingAvl (fffff800`1090b330) fffff800`1096f166 4883c428 add rsp,28h fffff800`1096f16a c3 ret ..... ..... 0: kd\u003e dq (fffff800`15e50000 +0x872a0 + 0x08 * (0x15a)) L1 fffff800`15ed7d70 fffff800`108162e0 0: kd\u003e u fffff800`108162e0 nt!ExFreeCacheAwareRundownProtection: fffff800`108162e0 4053 push rbx fffff800`108162e2 4883ec20 sub rsp,20h fffff800`108162e6 488bd9 mov rbx,rcx fffff800`108162e9 488b4908 mov rcx,qword ptr [rcx+8] fffff800`108162ed e8fed20400 call nt!ExFreeHeapPool (fffff800`108635f0) fffff800`108162f2 488bcb mov rcx,rbx fffff800`108162f5 e8f6d20400 call nt!ExFreeHeapPool (fffff800`108635f0) fffff800`108162fa 4883c420 add rsp,20h dqs : display a sequence of quadwords along with symbols.\n// ImageBaseAddress + FirstThunk 0: kd\u003e dqs (fffff800`15e50000 + 0x872a0) L20 fffff800`15ed72a0 fffff800`1096f150 nt!RtlEnumerateGenericTableAvl fffff800`15ed72a8 fffff800`108eb150 nt!KeQueryHighestNodeNumber fffff800`15ed72b0 fffff800`1090bd30 nt!RtlInitializeGenericTableAvl fffff800`15ed72b8 fffff800`10874080 nt!KeInitializeEvent fffff800`15ed72c0 fffff800`10867470 nt!KeWaitForSingleObject fffff800`15ed72c8 fffff800`10865190 nt!KeSetEvent fffff800`15ed72d0 fffff800`109e7430 nt!wcschr fffff800`15ed72d8 fffff800`108f1a30 nt!MmIsThisAnNtAsSystem fffff800`15ed72e0 fffff800`10bf6c60 nt!RtlUpcaseUnicodeString fffff800`15ed72e8 fffff800`10c8ca40 nt!RtlUpcaseUnicodeChar fffff800`15ed72f0 fffff800`10f9a430 nt!NlsLeadByteInfo fffff800`15ed72f8 fffff800`1093a3f0 nt!MmSizeOfMdl fffff800`15ed7300 fffff800`10945210 nt!IoGetRequestorProcess fffff800`15ed7308 fffff800`108d1e60 nt!KeStackAttachProcess fffff800`15ed7310 fffff800`10845e60 nt!KeUnstackDetachProcess fffff800`15ed7318 fffff800`109e4590 nt!vsnwprintf fffff800`15ed7320 fffff800`10d321b0 nt!RtlUnicodeToUTF8N fffff800`15ed7328 fffff800`109e4a60 nt!strncmp fffff800`15ed7330 fffff800`10880060 nt!MmMapLockedPagesSpecifyCache fffff800`15ed7338 fffff800`1085bfc0 nt!IoAllocateMdl fffff800`15ed7340 fffff800`10932820 nt!MmBuildMdlForNonPagedPool fffff800`15ed7348 fffff800`10ba29b0 nt!RtlQueryFeatureConfigurationChangeStamp fffff800`15ed7350 fffff800`1099fae0 nt!RtlQueryFeatureConfiguration fffff800`15ed7358 fffff800`10ba29c0 nt!RtlRegisterFeatureConfigurationChangeNotification fffff800`15ed7360 fffff800`10f2fd90 nt!RtlUnregisterFeatureConfigurationChangeNotification fffff800`15ed7368 fffff800`10a10a20 nt!ZwQueryWnfStateData fffff800`15ed7370 fffff800`10fcb010 nt!ExAllocatePoolWithTag fffff800`15ed7378 fffff800`10ba2990 nt!RtlNotifyFeatureUsage fffff800`15ed7380 fffff800`1093ca40 nt!KeQueryMaximumProcessorCountEx fffff800`15ed7388 fffff800`10d25dd0 nt!RtlGetVersion fffff800`15ed7390 fffff800`10a0dfe0 nt!ZwOpenKey fffff800`15ed7398 fffff800`10d31230 nt!RtlIsStateSeparationEnabled Parsing HTTP.sys using PEInsight\nntoskrnl.exe ---------------- Hint Name | +-------------------------------------------------------------------------------+ | 2069 | RtlEnumerateGenericTableAvl | | 1220 | KeQueryHighestNodeNumber | | 2191 | RtlInitializeGenericTableAvl | | 1162 | KeInitializeEvent | | 1335 | KeWaitForSingleObject | | 1292 | KeSetEvent | | 3047 | wcschr | | 1431 | MmIsThisAnNtAsSystem | | 2421 | RtlUpcaseUnicodeString | | 2420 | RtlUpcaseUnicodeChar | | 1496 | NlsLeadByteInfo | | 1479 | MmSizeOfMdl | | 849 | IoGetRequestorProcess | | 1315 | KeStackAttachProcess | | 1330 | KeUnstackDetachProcess | | 2967 | _vsnwprintf | | 2414 | RtlUnicodeToUTF8N | | 3025 | strncmp | | 1441 | MmMapLockedPagesSpecifyCache | | 710 | IoAllocateMdl | .......... .......... .......... | 1258 | KeReleaseMutex | | 145 | ExAcquireRundownProtectionCacheAware | | 157 | ExAllocateCacheAwareRundownProtection | | 285 | ExReleaseRundownProtectionCacheAware | | 200 | ExFreeCacheAwareRundownProtection | +-------------------------------------------------------------------------------+ 0: kd\u003e ?? sizeof(_IMAGE_IMPORT_DESCRIPTOR) unsigned int64 0x14 _IMAGE_IMPORT_DESCRIPTOR 0: kd\u003e dt combase!_IMAGE_IMPORT_DESCRIPTOR (fffff800`15e50000 + 0x87d90 + 0x14) +0x000 Characteristics : 0x87e30 +0x000 OriginalFirstThunk : 0x87e30 // Import Name Table +0x004 TimeDateStamp : 0 +0x008 ForwarderChain : 0 +0x00c Name : 0x8aa62 // DLL Name +0x010 FirstThunk : 0x87000 // Import Address Table HAL.dll 0: kd\u003e da (fffff800`15e50000 + 0x8aa62) fffff800`15edaa62 \"HAL.dll\" 0: kd\u003e dqs (fffff800`15e50000 + 0x87e30) fffff800`15ed7e30 00000000`0008aa46 fffff800`15ed7e38 00000000`00000000 // Ends Entry for HAL.dll fffff800`15ed7e40 00000000`0008b1d6 fffff800`15ed7e48 00000000`0008b1b2 0: kd\u003e db (fffff800`15e50000 + 00000000`0008aa46) fffff800`15edaa46 54 00 4b 65 51 75 65 72-79 50 65 72 66 6f 72 6d T.KeQueryPerform fffff800`15edaa56 61 6e 63 65 43 6f 75 6e-74 65 72 00 48 41 4c 2e anceCounter.HAL. fffff800`15edaa66 64 6c 6c 00 2c 00 46 72-65 65 43 6f 6e 74 65 78 dll.,.FreeContex fffff800`15edaa76 74 42 75 66 66 65 72 00-4c 00 53 73 6c 47 65 74 tBuffer.L.SslGet _IMAGE_IMPORT_BY_NAME 0: kd\u003e dt combase!_IMAGE_IMPORT_BY_NAME (fffff800`15e50000 + 00000000`0008aa46) +0x000 Hint : 0x54 +0x002 Name : [1] \"K\" // HINT 0: kd\u003e da (fffff800`15e50000 + 00000000`0008aa46) fffff800`15edaa46 \"T\" // NAME 0: kd\u003e da (fffff800`15e50000 + 00000000`0008aa46 + 0x2) fffff800`15edaa48 \"KeQueryPerformanceCounter\" FirstThunk Parsing // ImageBaseAddress + FirstThunk 0: kd\u003e dqs (fffff800`15e50000 + 0x87000) fffff800`15ed7000 fffff800`1083c380 nt!KeQueryPerformanceCounter fffff800`15ed7008 00000000`00000000 fffff800`15ed7010 fffff800`128e1450 ndis!NdisGetJobObjectCompartmentId fffff800`15ed7018 fffff800`12837a20 ndis!NdisGetThreadObjectCompartmentId fffff800`15ed7020 00000000`00000000 Parsing HTTP.sys using PEInsight\nHAL.dll ---------------- Hint Name | +-------------------------------------------------------------------------------+ | 84 | KeQueryPerformanceCounter | +-------------------------------------------------------------------------------+ Parsing it with Extension command 0: kd\u003e !dh -f HTTP File Type: EXECUTABLE IMAGE FILE HEADER VALUES 8664 machine (X64) E number of sections 43E8008A time date stamp Tue Feb 7 07:36:02 2006 0 file pointer to symbol table 0 number of symbols F0 size of optional header 22 characteristics Executable App can handle \u003e2gb addresses OPTIONAL HEADER VALUES 20B magic # 14.20 linker version 126C00 size of code 5B400 size of initialized data 0 size of uninitialized data 15F010 address of entry point 1000 base of code ----- new ----- fffff80015e50000 image base 1000 section alignment 200 file alignment 1 subsystem (Native) 10.00 operating system version 10.00 image version 10.00 subsystem version 188000 size of image 600 size of headers 188BE7 checksum 0000000000040000 size of stack reserve 0000000000001000 size of stack commit 0000000000100000 size of heap reserve 0000000000001000 size of heap commit 4160 DLL characteristics High entropy VA supported Dynamic base NX compatible Guard 0 [ 0] address [size] of Export Directory 87D90 [ A0] address [size] of Import Directory 162000 [ 1D810] address [size] of Resource Directory 7A000 [ C834] address [size] of Exception Directory 180800 [ 25F0] address [size] of Security Directory 180000 [ 97C] address [size] of Base Relocation Directory 61590 [ 54] address [size] of Debug Directory 0 [ 0] address [size] of Description Directory 0 [ 0] address [size] of Special Directory 0 [ 0] address [size] of Thread Storage Directory 5C8A0 [ 118] address [size] of Load Configuration Directory 0 [ 0] address [size] of Bound Import Directory 87000 [ D80] address [size] of Import Address Table Directory 0 [ 0] address [size] of Delay Import Directory 0 [ 0] address [size] of COR20 Header Directory 0 [ 0] address [size] of Reserved Directory 0: kd\u003e dps HTTP+87000 fffff800`15ed7000 fffff800`1083c380 nt!KeQueryPerformanceCounter fffff800`15ed7008 00000000`00000000 fffff800`15ed7010 fffff800`128e1450 ndis!NdisGetJobObjectCompartmentId fffff800`15ed7018 fffff800`12837a20 ndis!NdisGetThreadObjectCompartmentId fffff800`15ed7020 00000000`00000000 fffff800`15ed7028 fffff800`129d8610 NETIO!NsiRegisterChangeNotification fffff800`15ed7030 fffff800`129f00b0 NETIO!CancelMibChangeNotify2 fffff800`15ed7038 fffff800`129fab00 NETIO!NsiDeregisterChangeNotification fffff800`15ed7040 fffff800`129d8420 NETIO!NotifyUnicastIpAddressChange fffff800`15ed7048 fffff800`129f9530 NETIO!NmrClientDetachProviderComplete fffff800`15ed7050 fffff800`129d16e0 NETIO!NmrClientAttachProvider fffff800`15ed7058 fffff800`129f95f0 NETIO!NmrWaitForClientDeregisterComplete fffff800`15ed7060 fffff800`129f9590 NETIO!NmrDeregisterClient fffff800`15ed7068 fffff800`129d0bf0 NETIO!NmrRegisterClient fffff800`15ed7070 fffff800`129d9890 NETIO!KfdFreeEnumHandle fffff800`15ed7078 fffff800`129cc500 NETIO!KfdDerefFilterContext ..... To dump the everything from executable\n!dh -a fffff800`15e50000 ",
-  "wordCount" : "2195",
-  "inLanguage": "en",
-  "datePublished": "2025-01-12T00:00:00Z",
-  "dateModified": "2025-01-12T00:00:00Z",
-  "author":{
-    "@type": "Person",
-    "name": "5h4rrk"
-  },
-  "mainEntityOfPage": {
-    "@type": "WebPage",
-    "@id": "http://localhost:1313/posts/pe-parse-windbg2/"
-  },
-  "publisher": {
-    "@type": "Organization",
-    "name": "shark.exe",
-    "logo": {
-      "@type": "ImageObject",
-      "url": "http://localhost:1313/favicon.ico"
-    }
-  }
-}
-</script>
+<html lang="en"><head><script src="/livereload.js?mindelay=10&amp;v=2&amp;port=1313&amp;path=livereload" data-no-instant defer></script>
+    <title>shark-asmx</title>
+    <meta content="text/html;charset=utf-8" http-equiv="Content-Type">
+    <meta content="utf-8" http-equiv="encoding">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="format-detection" content="telephone=no" />
+    <meta name="theme-color" content="#000084" />
+    <link rel="icon" href="http://localhost:1313//favicon.ico">
+    <link rel="canonical" href="http://localhost:1313/">
+    
+    
 </head>
-
-<body class="" id="top">
-<script>
-    if (localStorage.getItem("pref-theme") === "dark") {
-        document.body.classList.add('dark');
-    } else if (localStorage.getItem("pref-theme") === "light") {
-        document.body.classList.remove('dark')
-    } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
-        document.body.classList.add('dark');
-    }
-
-</script>
-
-<header class="header">
-    <nav class="nav">
-        <div class="logo">
-            <a href="http://localhost:1313/" accesskey="h" title="shark.exe (Alt + H)">shark.exe</a>
-            <div class="logo-switches">
-                <button id="theme-toggle" accesskey="t" title="(Alt + T)" aria-label="Toggle theme">
-                    <svg id="moon" xmlns="http://www.w3.org/2000/svg" width="24" height="18" viewBox="0 0 24 24"
-                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                        stroke-linejoin="round">
-                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
-                    </svg>
-                    <svg id="sun" xmlns="http://www.w3.org/2000/svg" width="24" height="18" viewBox="0 0 24 24"
-                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                        stroke-linejoin="round">
-                        <circle cx="12" cy="12" r="5"></circle>
-                        <line x1="12" y1="1" x2="12" y2="3"></line>
-                        <line x1="12" y1="21" x2="12" y2="23"></line>
-                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
-                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
-                        <line x1="1" y1="12" x2="3" y2="12"></line>
-                        <line x1="21" y1="12" x2="23" y2="12"></line>
-                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
-                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
-                    </svg>
-                </button>
+<body>
+<nav class="navbar navbar-inverse navbar-fixed-top">
+    <div class="navbar-inner">
+        <div class="container">
+            <button type="button" class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse"></button>
+            <a class="brand" href="http://localhost:1313/">shark-asmx</a>
+            <div class="nav-collapse collapse">
+                <ul class="nav">
+                    
+                    
+                        
+                            <li>
+                                <a href="/posts">
+                                    
+                                    <span>posts</span>
+                                </a>
+                            </li>
+                        
+                    
+                </ul>
             </div>
         </div>
-        <ul id="menu">
-            <li>
-                <a href="http://localhost:1313/tags" title="Tags">
-                    <span>Tags</span>
-                </a>
-            </li>
-        </ul>
-    </nav>
-</header>
-<main class="main">
+    </div>
+</nav><div id="content" class="container">
 
-<article class="post-single">
-  <header class="post-header">
-    <div class="breadcrumbs"><a href="http://localhost:1313/">Home</a>&nbsp;»&nbsp;<a href="http://localhost:1313/posts/">Posts</a></div>
-    <h1 class="post-title entry-hint-parent">
-      PE Parsing: A Step-by-Step Guide with WinDbg - Part 2
-    </h1>
-    <div class="post-meta"><span title='2025-01-12 00:00:00 +0000 UTC'>January 12, 2025</span>&nbsp;·&nbsp;11 min&nbsp;·&nbsp;5h4rrk
-
-</div>
-  </header> <div class="toc">
-    <details >
-        <summary accesskey="c" title="(Alt + C)">
-            <span class="details">Table of Contents</span>
-        </summary>
-
-        <div class="inner"><ul>
-                <li>
-                    <a href="#pe-import-directory-parsing" aria-label="PE Import Directory Parsing">PE Import Directory Parsing</a></li>
-                <li>
-                    <a href="#parsing-it-manually" aria-label="Parsing it Manually">Parsing it Manually</a><ul>
-                        
-                <li>
-                    <a href="#_image_dos_header" aria-label="_IMAGE_DOS_HEADER">_IMAGE_DOS_HEADER</a></li>
-                <li>
-                    <a href="#dos-stub--rich-header" aria-label="DOS STUB &amp; RICH HEADER">DOS STUB &amp; RICH HEADER</a></li>
-                <li>
-                    <a href="#_image_nt_headers64" aria-label="_IMAGE_NT_HEADERS64">_IMAGE_NT_HEADERS64</a></li>
-                <li>
-                    <a href="#_image_file_header" aria-label="_IMAGE_FILE_HEADER">_IMAGE_FILE_HEADER</a><ul>
-                        
-                <li>
-                    <a href="#dll-characteristics" aria-label="DLL Characteristics">DLL Characteristics</a></li></ul>
-                </li>
-                <li>
-                    <a href="#_image_optional_header64" aria-label="_IMAGE_OPTIONAL_HEADER64">_IMAGE_OPTIONAL_HEADER64</a></li>
-                <li>
-                    <a href="#export-directory" aria-label="Export Directory">Export Directory</a></li>
-                <li>
-                    <a href="#import-directory" aria-label="Import Directory">Import Directory</a></li>
-                <li>
-                    <a href="#_image_import_descriptor" aria-label="_IMAGE_IMPORT_DESCRIPTOR">_IMAGE_IMPORT_DESCRIPTOR</a></li>
-                <li>
-                    <a href="#ntoskrnlexe" aria-label="NTOSKRNL.EXE">NTOSKRNL.EXE</a><ul>
-                        
-                <li>
-                    <a href="#_image_import_by_name" aria-label="_IMAGE_IMPORT_BY_NAME">_IMAGE_IMPORT_BY_NAME</a></li>
-                <li>
-                    <a href="#firstthunk-parsing" aria-label="FirstThunk Parsing">FirstThunk Parsing</a></li>
-                <li>
-                    <a href="#_image_import_descriptor-1" aria-label="_IMAGE_IMPORT_DESCRIPTOR">_IMAGE_IMPORT_DESCRIPTOR</a></li></ul>
-                </li>
-                <li>
-                    <a href="#haldll" aria-label="HAL.dll">HAL.dll</a><ul>
-                        
-                <li>
-                    <a href="#_image_import_by_name-1" aria-label="_IMAGE_IMPORT_BY_NAME">_IMAGE_IMPORT_BY_NAME</a></li>
-                <li>
-                    <a href="#firstthunk-parsing-1" aria-label="FirstThunk Parsing">FirstThunk Parsing</a></li></ul>
-                </li></ul>
-                </li>
-                <li>
-                    <a href="#parsing-it-with-extension-command" aria-label="Parsing it with Extension command">Parsing it with Extension command</a>
-                </li>
-            </ul>
-        </div>
-    </details>
-</div>
-
-  <div class="post-content"><h4 id="pe-import-directory-parsing">PE Import Directory Parsing<a hidden class="anchor" aria-hidden="true" href="#pe-import-directory-parsing">#</a></h4>
+<div class="row-fluid navmargin">
+    <div class="page-header">
+        <h1>PE Parsing: A Step-by-Step Guide with WinDbg - Part 2 - Sun, Jan 12, 2025</h1>
+    </div>
+    <p class="lead"></p>
+    <h4 id="pe-import-directory-parsing">PE Import Directory Parsing</h4>
 <div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">0: kd&gt; !process <span class="m">0</span> <span class="m">0</span> msedge.exe
 </span></span><span class="line"><span class="cl">PROCESS ffff81822cc0a080
 </span></span><span class="line"><span class="cl">    SessionId: <span class="m">1</span>  Cid: 0f08    Peb: dbc4685000  ParentCid: 1b48
@@ -278,8 +71,8 @@
 </span></span></code></pre></div><p>ImageName : HTTP.sys</p>
 <p>ImageBaseAddress : <code>fffff80015e5000</code></p>
 <p><code>/Brepo</code> flag : In the context of building C/C++ application, it is related to incremental linking and dependency tracking.</p>
-<h4 id="parsing-it-manually">Parsing it Manually<a hidden class="anchor" aria-hidden="true" href="#parsing-it-manually">#</a></h4>
-<h5 id="_image_dos_header">_IMAGE_DOS_HEADER<a hidden class="anchor" aria-hidden="true" href="#_image_dos_header">#</a></h5>
+<h4 id="parsing-it-manually">Parsing it Manually</h4>
+<h5 id="_image_dos_header">_IMAGE_DOS_HEADER</h5>
 <div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">0: kd&gt; db fffff800<span class="sb">`</span>15e50000
 </span></span><span class="line"><span class="cl">fffff800<span class="sb">`</span>15e50000  4d 5a <span class="m">90</span> <span class="m">00</span> <span class="m">03</span> <span class="m">00</span> <span class="m">00</span> 00-04 <span class="m">00</span> <span class="m">00</span> <span class="m">00</span> ff ff <span class="m">00</span> <span class="m">00</span>  MZ..............
 </span></span><span class="line"><span class="cl">fffff800<span class="sb">`</span>15e50010  b8 <span class="m">00</span> <span class="m">00</span> <span class="m">00</span> <span class="m">00</span> <span class="m">00</span> <span class="m">00</span> 00-40 <span class="m">00</span> <span class="m">00</span> <span class="m">00</span> <span class="m">00</span> <span class="m">00</span> <span class="m">00</span> <span class="m">00</span>  ........@.......
@@ -309,7 +102,7 @@
 </span></span><span class="line"><span class="cl">
 </span></span><span class="line"><span class="cl">0: kd&gt; ? 0n216
 </span></span><span class="line"><span class="cl">Evaluate expression: <span class="nv">216</span> <span class="o">=</span> 00000000<span class="sb">`</span>000000d8
-</span></span></code></pre></div><h5 id="dos-stub--rich-header">DOS STUB &amp; RICH HEADER<a hidden class="anchor" aria-hidden="true" href="#dos-stub--rich-header">#</a></h5>
+</span></span></code></pre></div><h5 id="dos-stub--rich-header">DOS STUB &amp; RICH HEADER</h5>
 <div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">fffff807<span class="sb">`</span>2a4a0040  0e 1f ba 0e <span class="m">00</span> b4 <span class="m">09</span> cd-21 b8 <span class="m">01</span> 4c <span class="nb">cd</span> <span class="m">21</span> <span class="m">54</span> <span class="m">68</span>  ........!..L.!Th
 </span></span><span class="line"><span class="cl">fffff807<span class="sb">`</span>2a4a0050  <span class="m">69</span> <span class="m">73</span> <span class="m">20</span> <span class="m">70</span> <span class="m">72</span> 6f <span class="m">67</span> 72-61 6d <span class="m">20</span> <span class="m">63</span> <span class="m">61</span> 6e 6e 6f  is program canno
 </span></span><span class="line"><span class="cl">fffff807<span class="sb">`</span>2a4a0060  <span class="m">74</span> <span class="m">20</span> <span class="m">62</span> <span class="m">65</span> <span class="m">20</span> <span class="m">72</span> <span class="m">75</span> 6e-20 <span class="m">69</span> 6e <span class="m">20</span> <span class="m">44</span> 4f <span class="m">53</span> <span class="m">20</span>  t be run in DOS 
@@ -320,12 +113,12 @@
 </span></span><span class="line"><span class="cl">fffff807<span class="sb">`</span>2a4a00b0  ed <span class="m">00</span> a7 <span class="m">25</span> <span class="m">96</span> 6b aa 24-ed <span class="m">00</span> <span class="m">55</span> <span class="m">24</span> f8 6b aa <span class="m">24</span>  ...%.k.$..U$.k.$
 </span></span><span class="line"><span class="cl">fffff807<span class="sb">`</span>2a4a00c0  ed <span class="m">00</span> a8 <span class="m">25</span> f8 6b aa 24-52 <span class="m">69</span> <span class="m">63</span> <span class="m">68</span> f9 6b aa <span class="m">24</span>  ...%.k.<span class="nv">$Rich</span>.k.$
 </span></span><span class="line"><span class="cl">fffff807<span class="sb">`</span>2a4a00d0  <span class="m">00</span> <span class="m">00</span> <span class="m">00</span> <span class="m">00</span> <span class="m">00</span> <span class="m">00</span> <span class="m">00</span> <span class="m">00</span>                          ........
-</span></span></code></pre></div><h5 id="_image_nt_headers64">_IMAGE_NT_HEADERS64<a hidden class="anchor" aria-hidden="true" href="#_image_nt_headers64">#</a></h5>
+</span></span></code></pre></div><h5 id="_image_nt_headers64">_IMAGE_NT_HEADERS64</h5>
 <div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">0: kd&gt; dt combase!_IMAGE_NT_HEADERS64 <span class="o">(</span>fffff800<span class="sb">`</span>15e50000 + 0xd8<span class="o">)</span>
 </span></span><span class="line"><span class="cl">   +0x000 Signature        : 0x4550
 </span></span><span class="line"><span class="cl">   +0x004 FileHeader       : _IMAGE_FILE_HEADER
 </span></span><span class="line"><span class="cl">   +0x018 OptionalHeader   : _IMAGE_OPTIONAL_HEADER64
-</span></span></code></pre></div><h5 id="_image_file_header">_IMAGE_FILE_HEADER<a hidden class="anchor" aria-hidden="true" href="#_image_file_header">#</a></h5>
+</span></span></code></pre></div><h5 id="_image_file_header">_IMAGE_FILE_HEADER</h5>
 <div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">0: kd&gt; dt combase!_IMAGE_FILE_HEADER <span class="o">(</span>fffff800<span class="sb">`</span>15e50000 + 0xd8 + 0x4<span class="o">)</span>
 </span></span><span class="line"><span class="cl">   +0x000 Machine          : 0x8664
 </span></span><span class="line"><span class="cl">   +0x002 NumberOfSections : 0xe
@@ -334,7 +127,7 @@
 </span></span><span class="line"><span class="cl">   +0x00c NumberOfSymbols  : <span class="m">0</span>
 </span></span><span class="line"><span class="cl">   +0x010 SizeOfOptionalHeader : 0xf0
 </span></span><span class="line"><span class="cl">   +0x012 Characteristics  : 0x22
-</span></span></code></pre></div><h6 id="dll-characteristics">DLL Characteristics<a hidden class="anchor" aria-hidden="true" href="#dll-characteristics">#</a></h6>
+</span></span></code></pre></div><h6 id="dll-characteristics">DLL Characteristics</h6>
 <div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">0: kd&gt; .formats 0x22
 </span></span><span class="line"><span class="cl">Evaluate expression:
 </span></span><span class="line"><span class="cl">  Hex:     00000000<span class="sb">`</span><span class="m">00000022</span>
@@ -361,7 +154,7 @@
 </span></span></code></pre></div><ul>
 <li>STRUCTURED_EXCEPTION_HANDLER: <strong>Disabled</strong></li>
 </ul>
-<h5 id="_image_optional_header64">_IMAGE_OPTIONAL_HEADER64<a hidden class="anchor" aria-hidden="true" href="#_image_optional_header64">#</a></h5>
+<h5 id="_image_optional_header64">_IMAGE_OPTIONAL_HEADER64</h5>
 <div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">0: kd&gt; dt combase!_IMAGE_OPTIONAL_HEADER64 <span class="o">(</span>fffff800<span class="sb">`</span>15e50000 + 0xd8 + 0x18<span class="o">)</span>
 </span></span><span class="line"><span class="cl">   +0x000 Magic            : 0x20b
 </span></span><span class="line"><span class="cl">   +0x002 MajorLinkerVersion : 0xe <span class="s1">&#39;&#39;</span>
@@ -393,18 +186,18 @@
 </span></span><span class="line"><span class="cl">   +0x068 LoaderFlags      : <span class="m">0</span>
 </span></span><span class="line"><span class="cl">   +0x06c NumberOfRvaAndSizes : 0x10
 </span></span><span class="line"><span class="cl">   +0x070 DataDirectory    : <span class="o">[</span>16<span class="o">]</span> _IMAGE_DATA_DIRECTORY
-</span></span></code></pre></div><h5 id="export-directory">Export Directory<a hidden class="anchor" aria-hidden="true" href="#export-directory">#</a></h5>
+</span></span></code></pre></div><h5 id="export-directory">Export Directory</h5>
 <div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">0: kd&gt; dt combase!_IMAGE_DATA_DIRECTORY <span class="o">(</span>fffff800<span class="sb">`</span>15e50000 + 0xd8 + 0x18 + 0x70<span class="o">)</span>
 </span></span><span class="line"><span class="cl">   +0x000 VirtualAddress   : <span class="m">0</span>
 </span></span><span class="line"><span class="cl">   +0x004 Size             : <span class="m">0</span>
-</span></span></code></pre></div><h5 id="import-directory">Import Directory<a hidden class="anchor" aria-hidden="true" href="#import-directory">#</a></h5>
+</span></span></code></pre></div><h5 id="import-directory">Import Directory</h5>
 <div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">0: kd&gt; ?? sizeof<span class="o">(</span>combase!_IMAGE_DATA_DIRECTORY<span class="o">)</span>
 </span></span><span class="line"><span class="cl">unsigned int64 <span class="m">8</span>
 </span></span><span class="line"><span class="cl">
 </span></span><span class="line"><span class="cl">0: kd&gt; dt combase!_IMAGE_DATA_DIRECTORY <span class="o">(</span>fffff800<span class="sb">`</span>15e50000 + 0xd8 + 0x18 + 0x70 + 0x08<span class="o">)</span>
 </span></span><span class="line"><span class="cl">   +0x000 VirtualAddress   : 0x87d90
 </span></span><span class="line"><span class="cl">   +0x004 Size             : 0xa0
-</span></span></code></pre></div><h5 id="_image_import_descriptor">_IMAGE_IMPORT_DESCRIPTOR<a hidden class="anchor" aria-hidden="true" href="#_image_import_descriptor">#</a></h5>
+</span></span></code></pre></div><h5 id="_image_import_descriptor">_IMAGE_IMPORT_DESCRIPTOR</h5>
 <div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="k">typedef</span> <span class="k">struct</span> <span class="n">_IMAGE_IMPORT_DESCRIPTOR</span> <span class="p">{</span>
 </span></span><span class="line"><span class="cl">    <span class="k">union</span> <span class="p">{</span>
 </span></span><span class="line"><span class="cl">        <span class="n">DWORD</span> <span class="n">Characteristics</span><span class="p">;</span>    <span class="c1">// 0 for terminating null import descriptor
@@ -424,7 +217,7 @@
 </span></span><span class="line"><span class="cl">   +0x010 FirstThunk       : 0x872a0 //Points to Import Address Table
 </span></span></code></pre></div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">0: kd&gt; da <span class="o">(</span>fffff800<span class="sb">`</span>15e50000 + 0x8aa38<span class="o">)</span>
 </span></span><span class="line"><span class="cl">fffff800<span class="sb">`</span>15edaa38  <span class="s2">&#34;ntoskrnl.exe&#34;</span>
-</span></span></code></pre></div><h5 id="ntoskrnlexe">NTOSKRNL.EXE<a hidden class="anchor" aria-hidden="true" href="#ntoskrnlexe">#</a></h5>
+</span></span></code></pre></div><h5 id="ntoskrnlexe">NTOSKRNL.EXE</h5>
 <div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">0: kd&gt; dqs <span class="o">(</span>fffff800<span class="sb">`</span>15e50000 + 0x880d0<span class="o">)</span> L15C
 </span></span><span class="line"><span class="cl">fffff800<span class="sb">`</span>15ed80d0  00000000<span class="sb">`</span>000893ec
 </span></span><span class="line"><span class="cl">fffff800<span class="sb">`</span>15ed80d8  00000000<span class="sb">`</span>0008940a
@@ -439,7 +232,7 @@
 </span></span><span class="line"><span class="cl">fffff800<span class="sb">`</span>15ed8b98  00000000<span class="sb">`</span>0008b488
 </span></span><span class="line"><span class="cl">fffff800<span class="sb">`</span>15ed8ba0  00000000<span class="sb">`</span>0008b4dc
 </span></span><span class="line"><span class="cl">fffff800<span class="sb">`</span>15ed8ba8  00000000<span class="sb">`</span><span class="m">00000000</span>
-</span></span></code></pre></div><h6 id="_image_import_by_name">_IMAGE_IMPORT_BY_NAME<a hidden class="anchor" aria-hidden="true" href="#_image_import_by_name">#</a></h6>
+</span></span></code></pre></div><h6 id="_image_import_by_name">_IMAGE_IMPORT_BY_NAME</h6>
 <div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">// Entry 0x00
 </span></span><span class="line"><span class="cl">0: kd&gt; dt combase!_IMAGE_IMPORT_BY_NAME <span class="o">(</span>fffff800<span class="sb">`</span>15e50000 + 00000000<span class="sb">`</span>000893ec<span class="o">)</span>
 </span></span><span class="line"><span class="cl">   +0x000 Hint             : 0x815
@@ -475,7 +268,7 @@
 </span></span><span class="line"><span class="cl">0: kd&gt; da <span class="o">(</span>fffff800<span class="sb">`</span>15e50000 + 00000000<span class="sb">`</span>0008b4dc+0x02<span class="o">)</span>
 </span></span><span class="line"><span class="cl">fffff800<span class="sb">`</span>15edb4de  <span class="s2">&#34;ExFreeCacheAwareRundownProtectio&#34;</span>
 </span></span><span class="line"><span class="cl">fffff800<span class="sb">`</span>15edb4fe  <span class="s2">&#34;n&#34;</span>
-</span></span></code></pre></div><h6 id="firstthunk-parsing">FirstThunk Parsing<a hidden class="anchor" aria-hidden="true" href="#firstthunk-parsing">#</a></h6>
+</span></span></code></pre></div><h6 id="firstthunk-parsing">FirstThunk Parsing</h6>
 <div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">// ImageBaseAddress + FirstThunk
 </span></span><span class="line"><span class="cl">
 </span></span><span class="line"><span class="cl">: kd&gt; db <span class="o">(</span>fffff800<span class="sb">`</span>15e50000 +0x872a0<span class="o">)</span>
@@ -595,7 +388,7 @@
 </span></span><span class="line"><span class="cl">        +-------------------------------------------------------------------------------+
 </span></span></code></pre></div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">0: kd&gt; ?? sizeof<span class="o">(</span>_IMAGE_IMPORT_DESCRIPTOR<span class="o">)</span>
 </span></span><span class="line"><span class="cl">unsigned int64 0x14
-</span></span></code></pre></div><h6 id="_image_import_descriptor-1">_IMAGE_IMPORT_DESCRIPTOR<a hidden class="anchor" aria-hidden="true" href="#_image_import_descriptor-1">#</a></h6>
+</span></span></code></pre></div><h6 id="_image_import_descriptor-1">_IMAGE_IMPORT_DESCRIPTOR</h6>
 <div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">0: kd&gt; dt combase!_IMAGE_IMPORT_DESCRIPTOR  <span class="o">(</span>fffff800<span class="sb">`</span>15e50000 + 0x87d90 + 0x14<span class="o">)</span>
 </span></span><span class="line"><span class="cl">   +0x000 Characteristics  : 0x87e30
 </span></span><span class="line"><span class="cl">   +0x000 OriginalFirstThunk : 0x87e30 // Import Name Table
@@ -603,7 +396,7 @@
 </span></span><span class="line"><span class="cl">   +0x008 ForwarderChain   : <span class="m">0</span>
 </span></span><span class="line"><span class="cl">   +0x00c Name             : 0x8aa62 // DLL Name
 </span></span><span class="line"><span class="cl">   +0x010 FirstThunk       : 0x87000 // Import Address Table
-</span></span></code></pre></div><h5 id="haldll">HAL.dll<a hidden class="anchor" aria-hidden="true" href="#haldll">#</a></h5>
+</span></span></code></pre></div><h5 id="haldll">HAL.dll</h5>
 <div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">0: kd&gt; da  <span class="o">(</span>fffff800<span class="sb">`</span>15e50000 + 0x8aa62<span class="o">)</span>
 </span></span><span class="line"><span class="cl">fffff800<span class="sb">`</span>15edaa62  <span class="s2">&#34;HAL.dll&#34;</span>
 </span></span></code></pre></div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">0: kd&gt; dqs  <span class="o">(</span>fffff800<span class="sb">`</span>15e50000 + 0x87e30<span class="o">)</span>
@@ -617,7 +410,7 @@
 </span></span><span class="line"><span class="cl">fffff800<span class="sb">`</span>15edaa56  <span class="m">61</span> 6e <span class="m">63</span> <span class="m">65</span> <span class="m">43</span> 6f <span class="m">75</span> 6e-74 <span class="m">65</span> <span class="m">72</span> <span class="m">00</span> <span class="m">48</span> <span class="m">41</span> 4c 2e  anceCounter.HAL.
 </span></span><span class="line"><span class="cl">fffff800<span class="sb">`</span>15edaa66  <span class="m">64</span> 6c 6c <span class="m">00</span> 2c <span class="m">00</span> <span class="m">46</span> 72-65 <span class="m">65</span> <span class="m">43</span> 6f 6e <span class="m">74</span> <span class="m">65</span> <span class="m">78</span>  dll.,.FreeContex
 </span></span><span class="line"><span class="cl">fffff800<span class="sb">`</span>15edaa76  <span class="m">74</span> <span class="m">42</span> <span class="m">75</span> <span class="m">66</span> <span class="m">66</span> <span class="m">65</span> <span class="m">72</span> 00-4c <span class="m">00</span> <span class="m">53</span> <span class="m">73</span> 6c <span class="m">47</span> <span class="m">65</span> <span class="m">74</span>  tBuffer.L.SslGet
-</span></span></code></pre></div><h6 id="_image_import_by_name-1">_IMAGE_IMPORT_BY_NAME<a hidden class="anchor" aria-hidden="true" href="#_image_import_by_name-1">#</a></h6>
+</span></span></code></pre></div><h6 id="_image_import_by_name-1">_IMAGE_IMPORT_BY_NAME</h6>
 <div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">0: kd&gt; dt combase!_IMAGE_IMPORT_BY_NAME <span class="o">(</span>fffff800<span class="sb">`</span>15e50000 + 00000000<span class="sb">`</span>0008aa46<span class="o">)</span>
 </span></span><span class="line"><span class="cl">   +0x000 Hint             : 0x54
 </span></span><span class="line"><span class="cl">   +0x002 Name             : <span class="o">[</span>1<span class="o">]</span>  <span class="s2">&#34;K&#34;</span>
@@ -629,7 +422,7 @@
 </span></span><span class="line"><span class="cl">// NAME 
 </span></span><span class="line"><span class="cl">0: kd&gt; da  <span class="o">(</span>fffff800<span class="sb">`</span>15e50000 + 00000000<span class="sb">`</span>0008aa46 + 0x2<span class="o">)</span>
 </span></span><span class="line"><span class="cl">fffff800<span class="sb">`</span>15edaa48  <span class="s2">&#34;KeQueryPerformanceCounter&#34;</span>
-</span></span></code></pre></div><h6 id="firstthunk-parsing-1">FirstThunk Parsing<a hidden class="anchor" aria-hidden="true" href="#firstthunk-parsing-1">#</a></h6>
+</span></span></code></pre></div><h6 id="firstthunk-parsing-1">FirstThunk Parsing</h6>
 <div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">// ImageBaseAddress + FirstThunk
 </span></span><span class="line"><span class="cl">0: kd&gt; dqs  <span class="o">(</span>fffff800<span class="sb">`</span>15e50000 + 0x87000<span class="o">)</span>
 </span></span><span class="line"><span class="cl">fffff800<span class="sb">`</span>15ed7000  fffff800<span class="sb">`</span>1083c380 nt!KeQueryPerformanceCounter
@@ -644,7 +437,7 @@
 </span></span><span class="line"><span class="cl">        +-------------------------------------------------------------------------------+
 </span></span><span class="line"><span class="cl">        <span class="p">|</span> <span class="m">84</span>         <span class="p">|</span> KeQueryPerformanceCounter                                        <span class="p">|</span>
 </span></span><span class="line"><span class="cl">        +-------------------------------------------------------------------------------+
-</span></span></code></pre></div><h4 id="parsing-it-with-extension-command">Parsing it with Extension command<a hidden class="anchor" aria-hidden="true" href="#parsing-it-with-extension-command">#</a></h4>
+</span></span></code></pre></div><h4 id="parsing-it-with-extension-command">Parsing it with Extension command</h4>
 <div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">0: kd&gt; !dh -f HTTP
 </span></span><span class="line"><span class="cl">
 </span></span><span class="line"><span class="cl">File Type: EXECUTABLE IMAGE
@@ -725,220 +518,59 @@
 </span></span></code></pre></div><p>To dump the everything from executable</p>
 <div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">!dh -a fffff800<span class="sb">`</span>15e50000 
 </span></span></code></pre></div>
-
-  </div>
-
-  <footer class="post-footer">
-    <ul class="post-tags">
-      <li><a href="http://localhost:1313/tags/windbg/">WinDbg</a></li>
-      <li><a href="http://localhost:1313/tags/pe/">PE</a></li>
-      <li><a href="http://localhost:1313/tags/portable-executable/">Portable Executable</a></li>
-      <li><a href="http://localhost:1313/tags/pe-parsing/">PE Parsing</a></li>
-      <li><a href="http://localhost:1313/tags/debugging/">Debugging</a></li>
-      <li><a href="http://localhost:1313/tags/reverse-engineering/">Reverse Engineering</a></li>
-      <li><a href="http://localhost:1313/tags/windows-internals/">Windows Internals</a></li>
-    </ul>
-<nav class="paginav">
-  <a class="prev" href="http://localhost:1313/posts/windows-shellcode/">
-    <span class="title">« Prev</span>
-    <br>
-    <span>Windows Shellcode Development &amp; Debugging with WinDbg: A Hands-On Guide (Part 1)</span>
-  </a>
-  <a class="next" href="http://localhost:1313/posts/pe-parse-windbg/pe-parse-windbg/">
-    <span class="title">Next »</span>
-    <br>
-    <span>Decoding PE Files A Step-by-Step Guide with WinDbg - Part 1</span>
-  </a>
-</nav>
+    <h4><a href="http://localhost:1313/">Back to Home</a></h4>
+</div>
 
 
-<ul class="share-buttons">
-    <li>
-        <a target="_blank" rel="noopener noreferrer" aria-label="share PE Parsing: A Step-by-Step Guide with WinDbg - Part 2 on x"
-            href="https://x.com/intent/tweet/?text=PE%20Parsing%3a%20A%20Step-by-Step%20Guide%20with%20WinDbg%20-%20Part%202&amp;url=http%3a%2f%2flocalhost%3a1313%2fposts%2fpe-parse-windbg2%2f&amp;hashtags=WinDbg%2cPE%2cPortableExecutable%2cPEParsing%2cDebugging%2cReverseEngineering%2cWindowsInternals">
-            <svg version="1.1" viewBox="0 0 512 512" xml:space="preserve" height="30px" width="30px" fill="currentColor">
-                <path
-                    d="M512 62.554 L 512 449.446 C 512 483.97 483.97 512 449.446 512 L 62.554 512 C 28.03 512 0 483.97 0 449.446 L 0 62.554 C 0 28.03 28.029 0 62.554 0 L 449.446 0 C 483.971 0 512 28.03 512 62.554 Z M 269.951 190.75 L 182.567 75.216 L 56 75.216 L 207.216 272.95 L 63.9 436.783 L 125.266 436.783 L 235.9 310.383 L 332.567 436.783 L 456 436.783 L 298.367 228.367 L 432.367 75.216 L 371.033 75.216 Z M 127.633 110 L 164.101 110 L 383.481 400.065 L 349.5 400.065 Z" />
-            </svg>
-        </a>
-    </li>
-    <li>
-        <a target="_blank" rel="noopener noreferrer" aria-label="share PE Parsing: A Step-by-Step Guide with WinDbg - Part 2 on linkedin"
-            href="https://www.linkedin.com/shareArticle?mini=true&amp;url=http%3a%2f%2flocalhost%3a1313%2fposts%2fpe-parse-windbg2%2f&amp;title=PE%20Parsing%3a%20A%20Step-by-Step%20Guide%20with%20WinDbg%20-%20Part%202&amp;summary=PE%20Parsing%3a%20A%20Step-by-Step%20Guide%20with%20WinDbg%20-%20Part%202&amp;source=http%3a%2f%2flocalhost%3a1313%2fposts%2fpe-parse-windbg2%2f">
-            <svg version="1.1" viewBox="0 0 512 512" xml:space="preserve" height="30px" width="30px" fill="currentColor">
-                <path
-                    d="M449.446,0c34.525,0 62.554,28.03 62.554,62.554l0,386.892c0,34.524 -28.03,62.554 -62.554,62.554l-386.892,0c-34.524,0 -62.554,-28.03 -62.554,-62.554l0,-386.892c0,-34.524 28.029,-62.554 62.554,-62.554l386.892,0Zm-288.985,423.278l0,-225.717l-75.04,0l0,225.717l75.04,0Zm270.539,0l0,-129.439c0,-69.333 -37.018,-101.586 -86.381,-101.586c-39.804,0 -57.634,21.891 -67.617,37.266l0,-31.958l-75.021,0c0.995,21.181 0,225.717 0,225.717l75.02,0l0,-126.056c0,-6.748 0.486,-13.492 2.474,-18.315c5.414,-13.475 17.767,-27.434 38.494,-27.434c27.135,0 38.007,20.707 38.007,51.037l0,120.768l75.024,0Zm-307.552,-334.556c-25.674,0 -42.448,16.879 -42.448,39.002c0,21.658 16.264,39.002 41.455,39.002l0.484,0c26.165,0 42.452,-17.344 42.452,-39.002c-0.485,-22.092 -16.241,-38.954 -41.943,-39.002Z" />
-            </svg>
-        </a>
-    </li>
-    <li>
-        <a target="_blank" rel="noopener noreferrer" aria-label="share PE Parsing: A Step-by-Step Guide with WinDbg - Part 2 on reddit"
-            href="https://reddit.com/submit?url=http%3a%2f%2flocalhost%3a1313%2fposts%2fpe-parse-windbg2%2f&title=PE%20Parsing%3a%20A%20Step-by-Step%20Guide%20with%20WinDbg%20-%20Part%202">
-            <svg version="1.1" viewBox="0 0 512 512" xml:space="preserve" height="30px" width="30px" fill="currentColor">
-                <path
-                    d="M449.446,0c34.525,0 62.554,28.03 62.554,62.554l0,386.892c0,34.524 -28.03,62.554 -62.554,62.554l-386.892,0c-34.524,0 -62.554,-28.03 -62.554,-62.554l0,-386.892c0,-34.524 28.029,-62.554 62.554,-62.554l386.892,0Zm-3.446,265.638c0,-22.964 -18.616,-41.58 -41.58,-41.58c-11.211,0 -21.361,4.457 -28.841,11.666c-28.424,-20.508 -67.586,-33.757 -111.204,-35.278l18.941,-89.121l61.884,13.157c0.756,15.734 13.642,28.29 29.56,28.29c16.407,0 29.706,-13.299 29.706,-29.701c0,-16.403 -13.299,-29.702 -29.706,-29.702c-11.666,0 -21.657,6.792 -26.515,16.578l-69.105,-14.69c-1.922,-0.418 -3.939,-0.042 -5.585,1.036c-1.658,1.073 -2.811,2.761 -3.224,4.686l-21.152,99.438c-44.258,1.228 -84.046,14.494 -112.837,35.232c-7.468,-7.164 -17.589,-11.591 -28.757,-11.591c-22.965,0 -41.585,18.616 -41.585,41.58c0,16.896 10.095,31.41 24.568,37.918c-0.639,4.135 -0.99,8.328 -0.99,12.576c0,63.977 74.469,115.836 166.33,115.836c91.861,0 166.334,-51.859 166.334,-115.836c0,-4.218 -0.347,-8.387 -0.977,-12.493c14.564,-6.47 24.735,-21.034 24.735,-38.001Zm-119.474,108.193c-20.27,20.241 -59.115,21.816 -70.534,21.816c-11.428,0 -50.277,-1.575 -70.522,-21.82c-3.007,-3.008 -3.007,-7.882 0,-10.889c3.003,-2.999 7.882,-3.003 10.885,0c12.777,12.781 40.11,17.317 59.637,17.317c19.522,0 46.86,-4.536 59.657,-17.321c3.016,-2.999 7.886,-2.995 10.885,0.008c3.008,3.011 3.003,7.882 -0.008,10.889Zm-5.23,-48.781c-16.373,0 -29.701,-13.324 -29.701,-29.698c0,-16.381 13.328,-29.714 29.701,-29.714c16.378,0 29.706,13.333 29.706,29.714c0,16.374 -13.328,29.698 -29.706,29.698Zm-160.386,-29.702c0,-16.381 13.328,-29.71 29.714,-29.71c16.369,0 29.689,13.329 29.689,29.71c0,16.373 -13.32,29.693 -29.689,29.693c-16.386,0 -29.714,-13.32 -29.714,-29.693Z" />
-            </svg>
-        </a>
-    </li>
-    <li>
-        <a target="_blank" rel="noopener noreferrer" aria-label="share PE Parsing: A Step-by-Step Guide with WinDbg - Part 2 on facebook"
-            href="https://facebook.com/sharer/sharer.php?u=http%3a%2f%2flocalhost%3a1313%2fposts%2fpe-parse-windbg2%2f">
-            <svg version="1.1" viewBox="0 0 512 512" xml:space="preserve" height="30px" width="30px" fill="currentColor">
-                <path
-                    d="M449.446,0c34.525,0 62.554,28.03 62.554,62.554l0,386.892c0,34.524 -28.03,62.554 -62.554,62.554l-106.468,0l0,-192.915l66.6,0l12.672,-82.621l-79.272,0l0,-53.617c0,-22.603 11.073,-44.636 46.58,-44.636l36.042,0l0,-70.34c0,0 -32.71,-5.582 -63.982,-5.582c-65.288,0 -107.96,39.569 -107.96,111.204l0,62.971l-72.573,0l0,82.621l72.573,0l0,192.915l-191.104,0c-34.524,0 -62.554,-28.03 -62.554,-62.554l0,-386.892c0,-34.524 28.029,-62.554 62.554,-62.554l386.892,0Z" />
-            </svg>
-        </a>
-    </li>
-    <li>
-        <a target="_blank" rel="noopener noreferrer" aria-label="share PE Parsing: A Step-by-Step Guide with WinDbg - Part 2 on whatsapp"
-            href="https://api.whatsapp.com/send?text=PE%20Parsing%3a%20A%20Step-by-Step%20Guide%20with%20WinDbg%20-%20Part%202%20-%20http%3a%2f%2flocalhost%3a1313%2fposts%2fpe-parse-windbg2%2f">
-            <svg version="1.1" viewBox="0 0 512 512" xml:space="preserve" height="30px" width="30px" fill="currentColor">
-                <path
-                    d="M449.446,0c34.525,0 62.554,28.03 62.554,62.554l0,386.892c0,34.524 -28.03,62.554 -62.554,62.554l-386.892,0c-34.524,0 -62.554,-28.03 -62.554,-62.554l0,-386.892c0,-34.524 28.029,-62.554 62.554,-62.554l386.892,0Zm-58.673,127.703c-33.842,-33.881 -78.847,-52.548 -126.798,-52.568c-98.799,0 -179.21,80.405 -179.249,179.234c-0.013,31.593 8.241,62.428 23.927,89.612l-25.429,92.884l95.021,-24.925c26.181,14.28 55.659,21.807 85.658,21.816l0.074,0c98.789,0 179.206,-80.413 179.247,-179.243c0.018,-47.895 -18.61,-92.93 -52.451,-126.81Zm-126.797,275.782l-0.06,0c-26.734,-0.01 -52.954,-7.193 -75.828,-20.767l-5.441,-3.229l-56.386,14.792l15.05,-54.977l-3.542,-5.637c-14.913,-23.72 -22.791,-51.136 -22.779,-79.287c0.033,-82.142 66.867,-148.971 149.046,-148.971c39.793,0.014 77.199,15.531 105.329,43.692c28.128,28.16 43.609,65.592 43.594,105.4c-0.034,82.149 -66.866,148.983 -148.983,148.984Zm81.721,-111.581c-4.479,-2.242 -26.499,-13.075 -30.604,-14.571c-4.105,-1.495 -7.091,-2.241 -10.077,2.241c-2.986,4.483 -11.569,14.572 -14.182,17.562c-2.612,2.988 -5.225,3.364 -9.703,1.12c-4.479,-2.241 -18.91,-6.97 -36.017,-22.23c-13.314,-11.876 -22.304,-26.542 -24.916,-31.026c-2.612,-4.484 -0.279,-6.908 1.963,-9.14c2.016,-2.007 4.48,-5.232 6.719,-7.847c2.24,-2.615 2.986,-4.484 4.479,-7.472c1.493,-2.99 0.747,-5.604 -0.374,-7.846c-1.119,-2.241 -10.077,-24.288 -13.809,-33.256c-3.635,-8.733 -7.327,-7.55 -10.077,-7.688c-2.609,-0.13 -5.598,-0.158 -8.583,-0.158c-2.986,0 -7.839,1.121 -11.944,5.604c-4.105,4.484 -15.675,15.32 -15.675,37.364c0,22.046 16.048,43.342 18.287,46.332c2.24,2.99 31.582,48.227 76.511,67.627c10.685,4.615 19.028,7.371 25.533,9.434c10.728,3.41 20.492,2.929 28.209,1.775c8.605,-1.285 26.499,-10.833 30.231,-21.295c3.732,-10.464 3.732,-19.431 2.612,-21.298c-1.119,-1.869 -4.105,-2.99 -8.583,-5.232Z" />
-            </svg>
-        </a>
-    </li>
-    <li>
-        <a target="_blank" rel="noopener noreferrer" aria-label="share PE Parsing: A Step-by-Step Guide with WinDbg - Part 2 on telegram"
-            href="https://telegram.me/share/url?text=PE%20Parsing%3a%20A%20Step-by-Step%20Guide%20with%20WinDbg%20-%20Part%202&amp;url=http%3a%2f%2flocalhost%3a1313%2fposts%2fpe-parse-windbg2%2f">
-            <svg version="1.1" xml:space="preserve" viewBox="2 2 28 28" height="30px" width="30px" fill="currentColor">
-                <path
-                    d="M26.49,29.86H5.5a3.37,3.37,0,0,1-2.47-1,3.35,3.35,0,0,1-1-2.47V5.48A3.36,3.36,0,0,1,3,3,3.37,3.37,0,0,1,5.5,2h21A3.38,3.38,0,0,1,29,3a3.36,3.36,0,0,1,1,2.46V26.37a3.35,3.35,0,0,1-1,2.47A3.38,3.38,0,0,1,26.49,29.86Zm-5.38-6.71a.79.79,0,0,0,.85-.66L24.73,9.24a.55.55,0,0,0-.18-.46.62.62,0,0,0-.41-.17q-.08,0-16.53,6.11a.59.59,0,0,0-.41.59.57.57,0,0,0,.43.52l4,1.24,1.61,4.83a.62.62,0,0,0,.63.43.56.56,0,0,0,.4-.17L16.54,20l4.09,3A.9.9,0,0,0,21.11,23.15ZM13.8,20.71l-1.21-4q8.72-5.55,8.78-5.55c.15,0,.23,0,.23.16a.18.18,0,0,1,0,.06s-2.51,2.3-7.52,6.8Z" />
-            </svg>
-        </a>
-    </li>
-    <li>
-        <a target="_blank" rel="noopener noreferrer" aria-label="share PE Parsing: A Step-by-Step Guide with WinDbg - Part 2 on ycombinator"
-            href="https://news.ycombinator.com/submitlink?t=PE%20Parsing%3a%20A%20Step-by-Step%20Guide%20with%20WinDbg%20-%20Part%202&u=http%3a%2f%2flocalhost%3a1313%2fposts%2fpe-parse-windbg2%2f">
-            <svg version="1.1" xml:space="preserve" width="30px" height="30px" viewBox="0 0 512 512" fill="currentColor"
-                xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape">
-                <path
-                    d="M449.446 0C483.971 0 512 28.03 512 62.554L512 449.446C512 483.97 483.97 512 449.446 512L62.554 512C28.03 512 0 483.97 0 449.446L0 62.554C0 28.03 28.029 0 62.554 0L449.446 0ZM183.8767 87.9921H121.8427L230.6673 292.4508V424.0079H281.3328V292.4508L390.1575 87.9921H328.1233L256 238.2489z" />
-            </svg>
-        </a>
-    </li>
-</ul>
+        </div><footer class="container">
+    <hr class="soften">
+    <p>
+&copy; 
 
-  </footer>
-</article>
-    </main>
     
-<footer class="footer">
-        <span>&copy; 2025 <a href="http://localhost:1313/">shark.exe</a></span> · 
 
-    <span>
-        Powered by
-        <a href="https://gohugo.io/" rel="noopener noreferrer" target="_blank">Hugo</a> &
-        <a href="https://github.com/adityatelange/hugo-PaperMod/" rel="noopener" target="_blank">PaperMod</a>
-    </span>
+<span id="thisyear">2026</span>
+
+
+</p>
+    <p class="text-center">
+        
+        
+        
+        
+        
+    </p>
 </footer>
-<a href="#top" aria-label="go to top" title="Go to Top (Alt + G)" class="top-link" id="top-link" accesskey="g">
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 6" fill="currentColor">
-        <path d="M12 6H0l6-6z" />
-    </svg>
-</a>
 
+</body><link rel="stylesheet" href="/css/bootstrap.css">
+<link rel="stylesheet" href="/css/bootstrap-responsive.css">
+<link rel="stylesheet" href="/css/style.css">
+
+<script src="/js/jquery.js"></script>
+<script src="/js/bootstrap-386.js"></script>
+<script src="/js/bootstrap-transition.js"></script>
+<script src="/js/bootstrap-alert.js"></script>
+<script src="/js/bootstrap-modal.js"></script>
+<script src="/js/bootstrap-dropdown.js"></script>
+<script src="/js/bootstrap-scrollspy.js"></script>
+<script src="/js/bootstrap-tab.js"></script>
+<script src="/js/bootstrap-tooltip.js"></script>
+<script src="/js/bootstrap-popover.js"></script>
+<script src="/js/bootstrap-button.js"></script>
+<script src="/js/bootstrap-collapse.js"></script>
+<script src="/js/bootstrap-carousel.js"></script>
+<script src="/js/bootstrap-typeahead.js"></script>
+<script src="/js/bootstrap-affix.js"></script>
 <script>
-    let menu = document.getElementById('menu')
-    if (menu) {
-        menu.scrollLeft = localStorage.getItem("menu-scroll-position");
-        menu.onscroll = function () {
-            localStorage.setItem("menu-scroll-position", menu.scrollLeft);
-        }
-    }
-
-    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-        anchor.addEventListener("click", function (e) {
-            e.preventDefault();
-            var id = this.getAttribute("href").substr(1);
-            if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView({
-                    behavior: "smooth"
-                });
-            } else {
-                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView();
-            }
-            if (id === "top") {
-                history.replaceState(null, null, " ");
-            } else {
-                history.pushState(null, null, `#${id}`);
-            }
-        });
-    });
-
-</script>
-<script>
-    var mybutton = document.getElementById("top-link");
-    window.onscroll = function () {
-        if (document.body.scrollTop > 800 || document.documentElement.scrollTop > 800) {
-            mybutton.style.visibility = "visible";
-            mybutton.style.opacity = "1";
-        } else {
-            mybutton.style.visibility = "hidden";
-            mybutton.style.opacity = "0";
-        }
+    _386 = { 
+        fastLoad: null ,
+        onePass: null , 
+        speedFactor: 10 
     };
 
+    
+    function ThisYear() {
+        document.getElementById('thisyear').innerHTML = new Date().getFullYear();
+    };
 </script>
-<script>
-    document.getElementById("theme-toggle").addEventListener("click", () => {
-        if (document.body.className.includes("dark")) {
-            document.body.classList.remove('dark');
-            localStorage.setItem("pref-theme", 'light');
-        } else {
-            document.body.classList.add('dark');
-            localStorage.setItem("pref-theme", 'dark');
-        }
-    })
-
-</script>
-<script>
-    document.querySelectorAll('pre > code').forEach((codeblock) => {
-        const container = codeblock.parentNode.parentNode;
-
-        const copybutton = document.createElement('button');
-        copybutton.classList.add('copy-code');
-        copybutton.innerHTML = 'copy';
-
-        function copyingDone() {
-            copybutton.innerHTML = 'copied!';
-            setTimeout(() => {
-                copybutton.innerHTML = 'copy';
-            }, 2000);
-        }
-
-        copybutton.addEventListener('click', (cb) => {
-            if ('clipboard' in navigator) {
-                navigator.clipboard.writeText(codeblock.textContent);
-                copyingDone();
-                return;
-            }
-
-            const range = document.createRange();
-            range.selectNodeContents(codeblock);
-            const selection = window.getSelection();
-            selection.removeAllRanges();
-            selection.addRange(range);
-            try {
-                document.execCommand('copy');
-                copyingDone();
-            } catch (e) { };
-            selection.removeRange(range);
-        });
-
-        if (container.classList.contains("highlight")) {
-            container.appendChild(copybutton);
-        } else if (container.parentNode.firstChild == container) {
-            
-        } else if (codeblock.parentNode.parentNode.parentNode.parentNode.parentNode.nodeName == "TABLE") {
-            
-            codeblock.parentNode.parentNode.parentNode.parentNode.parentNode.appendChild(copybutton);
-        } else {
-            
-            codeblock.parentNode.appendChild(copybutton);
-        }
-    });
-</script>
-</body>
-
 </html>

@@ -1,317 +1,47 @@
 <!DOCTYPE html>
-<html lang="en" dir="auto">
-
-<head><script src="/livereload.js?mindelay=10&amp;v=2&amp;port=1313&amp;path=livereload" data-no-instant defer></script><meta charset="utf-8">
-<meta http-equiv="X-UA-Compatible" content="IE=edge">
-<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<meta name="robots" content="index, follow">
-<title>ReAL-File-System-bi0sCTF2024 | shark.exe</title>
-<meta name="keywords" content="bi0sCTF2024, Resilient File System, File System Analysis, Log Analysis, File System Forensics, ReFS">
-<meta name="description" content="Full detailed writeup for ReAL-File-System which is centered around ReFS Log Analysis.
-tl;dr
-
-Disk Forensics
-Resilient File System
-Log Analysis
-">
-<meta name="author" content="5h4rrk">
-<link rel="canonical" href="http://localhost:1313/posts/resilient-file-system/">
-<link crossorigin="anonymous" href="/assets/css/stylesheet.180f19e094a50e5c790e9ddd948e1a18e5dc254c922bb069dceb5480237cf06c.css" integrity="sha256-GA8Z4JSlDlx5Dp3dlI4aGOXcJUySK7Bp3OtUgCN88Gw=" rel="preload stylesheet" as="style">
-<link rel="icon" href="http://localhost:1313/favicon.ico">
-<link rel="icon" type="image/png" sizes="16x16" href="http://localhost:1313/favicon-16x16.png">
-<link rel="icon" type="image/png" sizes="32x32" href="http://localhost:1313/favicon-32x32.png">
-<link rel="apple-touch-icon" href="http://localhost:1313/apple-touch-icon.png">
-<link rel="mask-icon" href="http://localhost:1313/safari-pinned-tab.svg">
-<meta name="theme-color" content="#2e2e33">
-<meta name="msapplication-TileColor" content="#2e2e33">
-<link rel="alternate" hreflang="en" href="http://localhost:1313/posts/resilient-file-system/">
-<noscript>
-    <style>
-        #theme-toggle,
-        .top-link {
-            display: none;
-        }
-
-    </style>
-    <style>
-        @media (prefers-color-scheme: dark) {
-            :root {
-                --theme: rgb(29, 30, 32);
-                --entry: rgb(46, 46, 51);
-                --primary: rgb(218, 218, 219);
-                --secondary: rgb(155, 156, 157);
-                --tertiary: rgb(65, 66, 68);
-                --content: rgb(196, 196, 197);
-                --code-block-bg: rgb(46, 46, 51);
-                --code-bg: rgb(55, 56, 62);
-                --border: rgb(51, 51, 51);
-            }
-
-            .list {
-                background: var(--theme);
-            }
-
-            .list:not(.dark)::-webkit-scrollbar-track {
-                background: 0 0;
-            }
-
-            .list:not(.dark)::-webkit-scrollbar-thumb {
-                border-color: var(--theme);
-            }
-        }
-
-    </style>
-</noscript><meta property="og:url" content="http://localhost:1313/posts/resilient-file-system/">
-  <meta property="og:site_name" content="shark.exe">
-  <meta property="og:title" content="ReAL-File-System-bi0sCTF2024">
-  <meta property="og:description" content="Full detailed writeup for ReAL-File-System which is centered around ReFS Log Analysis.
-tl;dr
-Disk Forensics Resilient File System Log Analysis ">
-  <meta property="og:locale" content="en">
-  <meta property="og:type" content="article">
-    <meta property="article:section" content="posts">
-    <meta property="article:published_time" content="2024-03-08T07:51:58+00:00">
-    <meta property="article:modified_time" content="2024-03-08T07:51:58+00:00">
-    <meta property="article:tag" content="Bi0sCTF2024">
-    <meta property="article:tag" content="Resilient File System">
-    <meta property="article:tag" content="File System Analysis">
-    <meta property="article:tag" content="Log Analysis">
-    <meta property="article:tag" content="File System Forensics">
-    <meta property="article:tag" content="ReFS">
-<meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="ReAL-File-System-bi0sCTF2024">
-<meta name="twitter:description" content="Full detailed writeup for ReAL-File-System which is centered around ReFS Log Analysis.
-tl;dr
-
-Disk Forensics
-Resilient File System
-Log Analysis
-">
-
-
-<script type="application/ld+json">
-{
-  "@context": "https://schema.org",
-  "@type": "BreadcrumbList",
-  "itemListElement": [
-    {
-      "@type": "ListItem",
-      "position":  1 ,
-      "name": "Posts",
-      "item": "http://localhost:1313/posts/"
-    }, 
-    {
-      "@type": "ListItem",
-      "position":  2 ,
-      "name": "ReAL-File-System-bi0sCTF2024",
-      "item": "http://localhost:1313/posts/resilient-file-system/"
-    }
-  ]
-}
-</script>
-<script type="application/ld+json">
-{
-  "@context": "https://schema.org",
-  "@type": "BlogPosting",
-  "headline": "ReAL-File-System-bi0sCTF2024",
-  "name": "ReAL-File-System-bi0sCTF2024",
-  "description": "Full detailed writeup for ReAL-File-System which is centered around ReFS Log Analysis.\ntl;dr\nDisk Forensics Resilient File System Log Analysis ",
-  "keywords": [
-    "bi0sCTF2024", "Resilient File System", "File System Analysis", "Log Analysis", "File System Forensics", "ReFS"
-  ],
-  "articleBody": "Full detailed writeup for ReAL-File-System which is centered around ReFS Log Analysis.\ntl;dr\nDisk Forensics Resilient File System Log Analysis Challenge Points: 1000 No. of solves: 0 Challenge Author: 5h4rrK\nChallenge Description In a desperate bid to synchronize my PC clock, I unwittingly downloaded an application that promised a quick fix but instead wrought havoc by encrypting all my important files. Turning to my DFIR friend for help, his attempts to decipher the encrypted mess only worsened the situation, leaving the filesystem corrupted. My friend told me that only a DFIR expert can help recover my files. I’m filled with hope for their assistance in fixing my computer catastrophe.\nQuestion 1 List all directories that have been renamed, including their original names and the timestamps of when they were renamed.\nTimeZone - UTC(+05:30) [YYYY-MM-DD HH:MM:SS.XX] Format - [ [‘OriginalDirName’, ‘RenamedDirName’, ‘TimeStamp’] , .. ]\nQuestion 2 Name all the deleted directories with deletion timestamps.\nTimeZone : UTC(+05:30) [YYYY-MM-DD HH:MM:SS.XX] Format - [ [‘DirectoryName’ , ‘TimeStamp’] , .. ]\nQuestion 3 List all directories with their creation times, including originals if any that have been renamed or deleted.\nTimeZone : UTC(+05:30) [YYYY-MM-DD HH:MM:SS.XX] Format - [ [‘DirectoryName’ , ‘CreatedTime’] , …. ]\nQuestion 4 Recover the files that have been deleted, and provide the md5sum of each recovered file.\nFormat - [ [‘file1hash’] , [‘file2hash’], … ]\nQuestion 5 Identify all files that have been deleted (Simple + Permanent), including their deletion timestamps.\nTimeZone : UTC(+05:30) [YYYY-MM-DD HH:MM:SS.XX] Format - [ [ ‘filename’ , ‘TimeStamp’ , ‘Simple/Permanent’ ] , .. ]\nQuestion 6 Restore all encrypted files, decrypt them, and provide the md5sum of each decrypted file after removing any extra bytes before computing the hash.\nFormat - [ [‘hash1’] , [‘hash2’], ‘,..]\nSolution To address the corruption in the file system, we’ll initiate the repair process by examining the file system using a Hex Editor. Since the Resilient File System (ReFS) is not widely supported by forensic tools, we’ll rely on research papers for its structures.\nThe most recent version of Active Disk Editor is capable of loading ReFS, so we can load the image and confirm its integrity.\nOverview of ReFS structure The Volume Boot Record (VBR) serves as a reference to the Superblock, a crucial component. The Superblock references to child nodes known as CheckPoint.\nOur initial step would be calculating the cluster size. Later on we need this for carving out the files\nCluster Size = BytesPerSector * SectorsPerCluster\nClusterSize = 0x08 * 0x200 = 0x1000 (4KB)\nSuperBlock The file system includes three SuperBlocks: one at the start and two at the end.\nEach SuperBlock contains Cluster Numbers that point to primary and secondary Checkpoints.\nThis redundancy enhances system reliability by enabling quick recovery and maintaining data integrity.\nCheckPoint The file system has two CheckPoints.\nEach CheckPoint includes ReFS version information, Entry Size, and Entry Offset relative in position.\nAt offset 0xD0, there are 4 bytes representing the number of entries. Reading the next 4 bytes for each entry, we can identify the offsets to entries of the Object Table, Container Table, Directory Tree, and so on.\nFollowing these offsets allows us to precisely determine the locations of MSB+ standard nodes. It’s crucial to note that the signature for standard nodes is absence in ReFS 1.2 version.\nMETA_HDR_3FORMAT = '\u003c4sIQ16s4Q2Q' META_HDR_3FILEDS = [ 'signature', 'fixed_0x2?', '_unknown_2', '_unknown_3', 'LCN(1)', 'LCN(2)', 'LCN(3)', 'LCN(4)', '_object_id', 'object_id' ] META_HDR_3SZ = struct.calcsize(META_HDR_3FORMAT) class FSMetaPage: def __init__(self, vol, LCN): metapage_sz = 0x1000 vol.seek(LCN * metapage_sz) self.buf = io.BytesIO(vol.read(metapage_sz)) self.header = dict(zip(META_HDR_3FILEDS, struct.unpack(META_HDR_3FORMAT, self.buf.read(META_HDR_3SZ)))) [snip] class SuperBlock(FSMetaPage): def __init__(self, vol, LCN): super(SuperBlock, self).__init__(vol, LCN) [snip] class CheckPoint(FSMetaPage): def __init__(self, vol, LCN): super(CheckPoint, self).__init__(vol, LCN) [snip] Source : ARIN\nThe SuperBlock class inherits properties from the FSMetaPage class. The first Logical Cluster Number LCN(1), is a self-referencing offset. This means that it points back to the SuperBlock itself.\nSimilarly, in the case of the CheckPoint, the first Logical Cluster Number LCN(1) also serves as a self-referencing offset .\nUpon examination of the filesystem, it becomes evident that the SuperBlock and CheckPoint LCN(1) appears as null. To rectify this issue, we must ensure that the offset of the Superblock and CheckPoint is correctly set.\nOffset of the first Superblock = 0x1E0000\nLCN1 = 0x1E000 / 0x1000 = 0x1E (Little Endian)\nSimilar calculations and adjustments are necessary for other Superblock and CheckPoint\nWithin the filesystem, there are three SuperBlocks and two Checkpoints. Fixing any one of these SuperBlocks and Checkpoints will resolve the issue at hand. LCN1 : 0x1e Offset : 0x1e * 0x1000 = 0x1e000 LCN1 : 0x0f7ffd LCN1 : 0x0f7ffe LCN1 : 0x27d0 LCN1 : 0x01dc48 Now, let’s proceed by opening the file system image in Active Disk Editor.\nLogFile A logfile is a metadata file that stores transactional data to facilitate the recovery of the file system to a consistent state in the event of system crashes and unexpected conditions\nIt contains changes in metadata of files and directories like CREATE, MOVE, RENAME and DELETE.\nIn ReFS, logs are stored in a LogFile. The structure of the LogFile differs significantly from that of NTFS.\nThe opcodes used in ReFS LogFile differ from those found in NTFS’s $LogFile.\nReFS performs only redo operations, whereas NTFS performs both redo and undo operations.\nWe can locate the LogFile by searching MLogand ignores the first two MLog pages (control log type).\nReFS LogFile vs NTFS $LogFile Fig : Redo Structure of ReFS\nFig : Structure of Operation Record of NTFS $LogFile\nRead Finding Forensic Information on Creating a Folder in $LogFile of NTFS Now, let’s explore the structure of the ReFS LogFile in detail.\nReFS LogFile Structure Explanation Entry Header and Log Record Header Red Bounded Area -\u003e ReFS Entry Header Green Bounded Area -\u003e ReFS Log Header\nLog Record Redo Record Header Redo Log Header Size : 0x38 bytes\nRedo Data Offset Array Tail Offset : indicates ending of data offset array\nTail Size: size of each transaction\nRedo Transactional Data Example 1 Example 2 REFS_REDO_REC_HDR_FIELDS = [ 'redo_rec_size', 'opcode', 'tablekeys_count', 'tablekeys_offset', 'value_count', 'value_offset', 'unknown1', 'unknown2', 'unknown3', 'rec_mark', 'seq_no', 'end_mark' ] class TransactionContext: def __init__(self, buf): self.buf = io.BytesIO(buf) self.header = self.parse_header() self.transaction = self.parse_transaction() def __repr__(self): return \"TransactionContext\" def parse_header(self): return dict(zip(REFS_REDO_REC_HDR_FIELDS, struct.unpack(REFS_REDO_REC_HDR_FORMAT, self.buf.read(REFS_REDO_REC_HDR_SZ)))) def parse_transaction(self): transaction = [] tail_offset, tail_size = struct.unpack('\u003c2I', self.buf.read(8)) next_rp = self.buf.tell() while (True): if next_rp == 0: break if next_rp == tail_offset: break offset, size = struct.unpack('\u003c2I', self.buf.read(8)) next_rp = self.buf.tell() self.buf.seek(offset) transaction.append(self.buf.read(size)) self.buf.seek(next_rp) self.buf.seek(tail_offset) tail = self.buf.read(tail_size) transaction.insert(0, tail) return transaction Source: ARIN\nExample 3 Example 4 (Control Log Type) Fig : Control Log Type\nAnswers Extracting Log Files from the File System dd if=ReAL_File_System.001 skip=$((0x20001000)) count=$((0x200A7000 -0x20001000)) of=logs.txt bs=1 Question-1 List all directories that have been renamed, including their original names and the timestamps of when they were renamed. Format :[ [‘OriginalDirName’, ‘RenamedDirName’, TimeStamp] , .. ]\nTo identify renamed directories in ReFS, search for the specific opcodes related to directory renaming. By examining consecutive MLog entries associated with these opcodes, we can reveal the timestamps indicating when the renaming occurred.\nTo locate directories in the LogFile, search for the hexadecimal values 30 00 02 00, which serve as prefixes for directory entries. Conversely, the value 30 00 01 00 typically indicates file entries. However, it’s essential to note that there may be some false positives in the search results.\nFile Prefix (from ReFS Detector) : 30 01 00 00 80 01 00 00 00 00 00 00 30 00 01 00 Directory Renamed Opcode : 0x2 -\u003e 0x2 -\u003e 0x1 -\u003e 0x1 -\u003e 0x4\nTimestamp will be found in next MLog page (starting with opcode 0x4).\nThe timestamp in the ReFS LogFile is in Little-Endian format. To convert it to UTC +5:30, we can use DCode tool.\n[’e88e52cac’, ‘88077a4a1370’, ‘2024-02-18 13:10:20.49’]\nWe can write a script to automate the process.\n[‘fb828d071’, ‘cad090f9724d’, ‘2024-02-18 13:12:12.48’]\nFinal Ans\n[ ['e88e52cac', '88077a4a1370', '2024-02-18 13:10:20.49'], ['fb828d071','cad090f9724d', '2024-02-18 13:12:12.48'] ] Question-2 Name all the deleted directories with deletion timestamps. Format : [ [‘DirectoryName’ , ‘TimeStamp’] , .. ]\nDeletions can occur in two ways: Simple and Permanent.\nOpcode for Permanent Deletion\n0x2 -\u003e 0xf -\u003e 0x2 -\u003e 0xf -\u003e 0x4 -\u003e 0x12 To find the remaining opcodes, you can search in the next MLog entries. The timestamp can be found in opcode 0x04.\nPermanently Deleted Directories\n[ ['f8f1c218f9', '2024-02-18 13:11:28.57'], ['de34f60ab', '2024-02-18 13:13:19.60'] ] Simple Deleted Directory Opcode\nP(Directory Creation) → 0x06 → 0x04 → 0x04 → 0x04 → 0x04 → 0x03 → 0x02 → 0x02 → 0x01 → 0x01 → 0x0e → 0x04 → 0x03 → 0x04 → 0x04 → 0x04 → 0x01 → 0x04 → 0x03 → 0x04 → 0x04 → 0x08 After a directory is created, the opcode follows. It’s important to note that directories created with names starting with $ can be easily distinguished from other directory creations.\n['c062fb828', '2024-02-18 13:10:48.62'] Alternatively, another method to determine the deletion timestamp is by analyzing $IXXXXX entries.\nFinal Ans\n[ ['f8f1c218f9', '2024-02-18 13:11:28.57'], ['de34f60ab', '2024-02-18 13:13:19.60'], ['c062fb828', '2024-02-18 13:10:48.62'] ] Question -3 List all directories with their creation times, including renamed and deleted. Note : If a directory was renamed, include its original name and creation time.\nFomat : [ [‘DirectoryName’ , ‘CreatedTime’] , …. ]\nDir Creation\n0x00 → 0x00 → 0x04 → 0x10 → 0x01 → 0x01 → 0x01 → 0x0e → 0x03 → 0x04 Final Ans\n[ ['de34f60ab', '2024-02-18 13:06:59.22'], ['e88e52cac', '2024-02-18 13:07:31.13'], ['fb828d071', '2024-02-18 13:08:13.88'], ['f8f1c218f9','2024-02-18 13:08:40.58'], ['c062fb828', '2024-02-18 13:09:14.55'], ['bb6de6190', '2024-02-18 13:09:34.00'] ] Question - 4 Recover the files that have been deleted, and provide the md5sum of each recovered file. Format : [ [‘file1hash’]’ , [‘file2hash2’], … ]\nWe can find files that are simply deleted. $IXXXXX file has components like filename, fullpath , deletion time etc.\n$RXXXXX file contents can be recovered.\nWe can use the dd command to extract a file from an image file. We can also increase the extraction speed by adjusting the block size.\nDivide the skip and count by block-size.\nCopying and pasting content from Active Disk Editor works for smaller files. However, for larger files, it won’t work :)\nExtracting deleted files dd if=ReAL_File_System.001 skip=$(((0x1000 * 71168)/1)) count=$(((0x15a)/1)) bs=1 of=simple-pass.txt dd if=ReAL_File_System.001 skip=$(((0x1000 * 68608)/16)) count=$(((0x04e20)/16)) bs=16 of=19ff211f dd if=ReAL_File_System.001 skip=$(((0x1000 * 70144))) count=$(((0x041b7))) bs=1 of=fe0c329 f91488b7e00c31793bd7aa98c51896d0 simple-pass.txt 4c009b045056af8f9bb401c69408d2cf 19ff211f c50c5bcb9e98537e3d63df1bc68a81d0 fe0c329 Final Ans\n[ ['f91488b7e00c31793bd7aa98c51896d0'], ['4c009b045056af8f9bb401c69408d2cf'], ['c50c5bcb9e98537e3d63df1bc68a81d0'] ] Question - 5 Identify all files that have been deleted (Simple + Permanent), including their deletion timestamps. Format :[ [ ‘filename’ , ‘TimeStamp’ , ‘Simple/Permanent’ ] , .. ]\nSimple Deletion Permanent Deletion simple-pass.txt\nTimeStamp\n2024-02-18 13:15:00.51\nIn the same manner, examine the log file and we will find the other simple deleted files\n[ ['simple-pass.txt','2024-02-18 13:15:00.51','Simple'], ['19ff211f','2024-02-18 13:14:31.43','Simple'], ['fe0c329','2024-02-18 13:15:52.49','Simple'] ] Permanent Deleted File Opcode\n0x0f -\u003e 0x02 -\u003e 0x0f -\u003e 0x02 -\u003e 0x04 ('ead47cb','2024-02-18 13:19:26.69','Permanent') ('essay.txt','2024-02-18 13:18:22.47','Permanent') Final Ans\n[ ['simple-pass.txt','2024-02-18 13:15:00.51','Simple'], ['19ff211f','2024-02-18 13:14:31.43','Simple'], ['fe0c329','2024-02-18 13:15:52.49','Simple'], ['ead47cb','2024-02-18 13:19:26.69','Permanent'], ['essay.txt','2024-02-18 13:18:22.47','Permanent'] ] Question-6 Restore all encrypted files, decrypt them, and provide the md5sum of each decrypted file after removing any extra bytes before computing the hash. Format :[[‘hash1’], [‘hash2’],..]\nAn Overview on time_update.exe Enumerate each directory and rename all files.\nGenerate a random time and convert it to SystemToFileTime. Generate key1 and append a 4-byte nonce.\nCompute the MD5 hash of key1 and set it as key2.\nRename each file with a random time and encrypt it.\nEncryption : enc[i] = file[i] ^ key1[i] ^ key2[i]. Enumerate all files again and update their names with the .tort extension.\nBefore exiting, restore the system time to its initial state.\nFile-Decryption The time_update.exe uses two keys key1 and hash of key1 as key2 to encrypt the files.\nTo locate key1, we need to find the timestamp of the second rename. However, key1 includes an additional 4-byte nonce, the value of which is unknown. Therefore, brute force is required to determine the correct key1.\nBy cross-referencing the encrypted files in the logfile, we can identify the original filenames and then brute force the files using their headers to determine the nonce.\nSome files only have small byte file signatures, resulting in numerous possible nonces. We can validate these nonces by examining the end-of-file signatures and chunks present in the file.\nBecause it updates the time before encrypting the files, it leaves a trace in the log files that could potentially be used to recover key.\nOpcode for Renamed File : 0x02 → 0x05 → 0x01 → 0x04 → 0x04\nLet’s manually search for the required information. We’ll begin by assigning filenames with the extension tort and then conduct a search within the log file.\nSpecifically, we’ll focus on identifying the first operation code (opcode) located at offset 0xb0.\nAfter locating it, we’ll parse the data and examine the previous MLog to find the corresponding filenames.\nFirst Rename : 15005-39026.pdf -\u003e bf2f63b3\nSearch for the bf2f63b3.\nSecond Rename : bf2f6b3 -\u003e 0cf51fbc\nThe system time is expressed in Coordinated Universal Time (UTC).\nRename Time(Encryption Key) : 2010-02-26 12:38:43.0000000 Enc Key Time : 2010 2 2 26 12 38 43 0 Third Rename : 0cf51fbc -\u003e 0cf51fbc.tort\nSimilarly, locate the timestamps used for encryption on all remaining files, and then proceed to extract those files accordingly.\nbinary-01.gif -\u003e c7982ef6 -\u003e a917438f -\u003e a917438f.tort : 1995 2 2 27 2 11 42 0\nEverest Vista.webp -\u003e d406327c -\u003e 3a7fab71 -\u003e 3a7fab71.tort : 1990 8 2 28 21 6 35 0\nParanormal Phenomenon.docx -\u003e 830c92a3 -\u003e bb292337 -\u003e bb292337.tort : 1993 7 2 16 17 10 46 0\nso-cappy.jpg -\u003e 141e0f79 -\u003e 24819686 -\u003e 24819686.tort : 2001 4 2 19 8 27 45 0\nstuffs.rar -\u003e f15ebcd2 -\u003e 7a6c7166 -\u003e 7a6c7166.tort : 2009 11 2 22 17 5 55 0\nySq12b0T.mp4 -\u003e 86c66c9c -\u003e 185c65f8 -\u003e 185c65f8.tort : 2007 7 2 28 3 27 33 0\nvl36hkjkzbh91.png -\u003e 313feb6e -\u003e cc876a3b -\u003e cc876a3b.tort : 1985 3 2 4 16 23 53 0\nCarving Out Files 0cf51fbc.tort\ndd if=ReAL_File_System.001 skip=$(((0x10e94000)/4096)) count=$(((0x16c000)/4096)) bs=4096 of=0cf51fbc_1.tort dd if=ReAL_File_System.001 skip=$(((0x11001000)/4096)) count=$(((0x141000)/4096)) bs=4096 of=0cf51fbc_2.tort cat 0cf51fbc_1.tort 0cf51fbc_2.tort \u003e 0cf51fbc.tort a917438f.tort\ndd if=ReAL_File_System.001 skip=$(((0x10025000)/64)) count=$(((0x89ce40)/64)) bs=64 of=a917438f.tort Remove the extra bytes from the extracted files present due to the block size used during extraction.\n7a6c7166.tort\nGo to offset 0x108c2000, 0x10c05000 \u0026 read 830 * 0x1000 ,130 * 0x1000bytes respectively\ndd if=ReAL_File_System.001 skip=$(((0x108c2000)/8192)) count=$(((830 * 0x1000)/8192)) bs=8192 of=7a6c7166_1.tort dd if=ReAL_File_System.001 skip=$(((0x10c05000)/4096)) count=$(((130 * 0x1000)/4096)) bs=4096 of=7a6c7166_2.tort cat 7a6c7166_1.tort 7a6c7166_2.tort \u003e 7a6c7166.tort 185c65f8.tort\ndd if=ReAL_File_System.001 skip=$(((68743 * 0x1000)/4096)) count=$(((525 * 0x1000)/4096)) bs=4096 of=185c65f8.tort 24819686.tort\ndd if=ReAL_File_System.001 skip=$(((0x12800000)/4096)) count=$(((0x10000)/4096)) bs=4096 of=24819686.tort 3a7fab71.tort\ndd if=ReAL_File_System.001 skip=$(((0x10000000)/4096)) count=$(((0x25000)/4096)) bs=4096 of=3a7fab71.tort bb292337.tort\ndd if=ReAL_File_System.001 skip=$(((0x13a00000)/4096)) count=$(((0x8000)/4096)) bs=4096 of=bb292337.tort cc876a3b.tort\ndd if=ReAL_File_System.001 skip=$(((0x1000 * 72705))) count=$((0x175f)) bs=1 of=cc876a3b.tort We can write a script to remove the extra bytes from the extracted files.\nimport struct file_names = ['0cf51fbc.tort','a917438f.tort','7a6c7166.tort','185c65f8.tort','24819686.tort','3a7fab71.tort','bb292337.tort','cc876a3b.tort'] for _ in file_names: buff = bytes() file = open(_, 'rb') sig = file.read(0x04) sz = struct.unpack(\"",
-  "wordCount" : "3346",
-  "inLanguage": "en",
-  "datePublished": "2024-03-08T07:51:58Z",
-  "dateModified": "2024-03-08T07:51:58Z",
-  "author":{
-    "@type": "Person",
-    "name": "5h4rrk"
-  },
-  "mainEntityOfPage": {
-    "@type": "WebPage",
-    "@id": "http://localhost:1313/posts/resilient-file-system/"
-  },
-  "publisher": {
-    "@type": "Organization",
-    "name": "shark.exe",
-    "logo": {
-      "@type": "ImageObject",
-      "url": "http://localhost:1313/favicon.ico"
-    }
-  }
-}
-</script>
+<html lang="en"><head><script src="/livereload.js?mindelay=10&amp;v=2&amp;port=1313&amp;path=livereload" data-no-instant defer></script>
+    <title>shark-asmx</title>
+    <meta content="text/html;charset=utf-8" http-equiv="Content-Type">
+    <meta content="utf-8" http-equiv="encoding">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="format-detection" content="telephone=no" />
+    <meta name="theme-color" content="#000084" />
+    <link rel="icon" href="http://localhost:1313//favicon.ico">
+    <link rel="canonical" href="http://localhost:1313/">
+    
+    
 </head>
-
-<body class="" id="top">
-<script>
-    if (localStorage.getItem("pref-theme") === "dark") {
-        document.body.classList.add('dark');
-    } else if (localStorage.getItem("pref-theme") === "light") {
-        document.body.classList.remove('dark')
-    } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
-        document.body.classList.add('dark');
-    }
-
-</script>
-
-<header class="header">
-    <nav class="nav">
-        <div class="logo">
-            <a href="http://localhost:1313/" accesskey="h" title="shark.exe (Alt + H)">shark.exe</a>
-            <div class="logo-switches">
-                <button id="theme-toggle" accesskey="t" title="(Alt + T)" aria-label="Toggle theme">
-                    <svg id="moon" xmlns="http://www.w3.org/2000/svg" width="24" height="18" viewBox="0 0 24 24"
-                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                        stroke-linejoin="round">
-                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
-                    </svg>
-                    <svg id="sun" xmlns="http://www.w3.org/2000/svg" width="24" height="18" viewBox="0 0 24 24"
-                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                        stroke-linejoin="round">
-                        <circle cx="12" cy="12" r="5"></circle>
-                        <line x1="12" y1="1" x2="12" y2="3"></line>
-                        <line x1="12" y1="21" x2="12" y2="23"></line>
-                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
-                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
-                        <line x1="1" y1="12" x2="3" y2="12"></line>
-                        <line x1="21" y1="12" x2="23" y2="12"></line>
-                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
-                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
-                    </svg>
-                </button>
+<body>
+<nav class="navbar navbar-inverse navbar-fixed-top">
+    <div class="navbar-inner">
+        <div class="container">
+            <button type="button" class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse"></button>
+            <a class="brand" href="http://localhost:1313/">shark-asmx</a>
+            <div class="nav-collapse collapse">
+                <ul class="nav">
+                    
+                    
+                        
+                            <li>
+                                <a href="/posts">
+                                    
+                                    <span>posts</span>
+                                </a>
+                            </li>
+                        
+                    
+                </ul>
             </div>
         </div>
-        <ul id="menu">
-            <li>
-                <a href="http://localhost:1313/tags" title="Tags">
-                    <span>Tags</span>
-                </a>
-            </li>
-        </ul>
-    </nav>
-</header>
-<main class="main">
+    </div>
+</nav><div id="content" class="container">
 
-<article class="post-single">
-  <header class="post-header">
-    <div class="breadcrumbs"><a href="http://localhost:1313/">Home</a>&nbsp;»&nbsp;<a href="http://localhost:1313/posts/">Posts</a></div>
-    <h1 class="post-title entry-hint-parent">
-      ReAL-File-System-bi0sCTF2024
-    </h1>
-    <div class="post-meta"><span title='2024-03-08 07:51:58 +0000 UTC'>March 8, 2024</span>&nbsp;·&nbsp;16 min&nbsp;·&nbsp;5h4rrk
-
-</div>
-  </header> <div class="toc">
-    <details >
-        <summary accesskey="c" title="(Alt + C)">
-            <span class="details">Table of Contents</span>
-        </summary>
-
-        <div class="inner"><ul><ul><ul>
-                <li>
-                    <a href="#challenge-description" aria-label="Challenge Description">Challenge Description</a><ul>
-                        
-                <li>
-                    <a href="#question-1" aria-label="Question 1">Question 1</a></li>
-                <li>
-                    <a href="#question-2" aria-label="Question 2">Question 2</a></li>
-                <li>
-                    <a href="#question-3" aria-label="Question 3">Question 3</a></li>
-                <li>
-                    <a href="#question-4" aria-label="Question 4">Question 4</a></li>
-                <li>
-                    <a href="#question-5" aria-label="Question 5">Question 5</a></li>
-                <li>
-                    <a href="#question-6" aria-label="Question 6">Question 6</a></li></ul>
-                </li></ul>
-                    </ul>
-                    
-                <li>
-                    <a href="#solution" aria-label="Solution">Solution</a><ul>
-                        
-                <li>
-                    <a href="#overview-of-refs-structure" aria-label="Overview of ReFS structure">Overview of ReFS structure</a><ul>
-                        
-                <li>
-                    <a href="#superblock" aria-label="SuperBlock">SuperBlock</a></li>
-                <li>
-                    <a href="#checkpoint" aria-label="CheckPoint">CheckPoint</a></li>
-                <li>
-                    <a href="#logfile" aria-label="LogFile">LogFile</a></li>
-                <li>
-                    <a href="#refs-logfile-vs-ntfs-logfile" aria-label="ReFS LogFile vs NTFS $LogFile">ReFS LogFile vs NTFS $LogFile</a></li>
-                <li>
-                    <a href="#refs-logfile-structure" aria-label="ReFS LogFile Structure">ReFS LogFile Structure</a><ul>
-                        
-                <li>
-                    <a href="#explanation" aria-label="Explanation">Explanation</a></li>
-                <li>
-                    <a href="#entry-header-and-log-record-header" aria-label="Entry Header and Log Record Header">Entry Header and Log Record Header</a></li>
-                <li>
-                    <a href="#log-record" aria-label="Log Record">Log Record</a></li>
-                <li>
-                    <a href="#redo-record-header" aria-label="Redo Record Header">Redo Record Header</a></li>
-                <li>
-                    <a href="#redo-data-offset-array" aria-label="Redo Data Offset Array">Redo Data Offset Array</a></li>
-                <li>
-                    <a href="#redo-transactional-data" aria-label="Redo Transactional Data">Redo Transactional Data</a><ul>
-                        
-                <li>
-                    <a href="#example-1" aria-label="Example 1">Example 1</a></li>
-                <li>
-                    <a href="#example-2" aria-label="Example 2">Example 2</a></li>
-                <li>
-                    <a href="#example-3" aria-label="Example 3">Example 3</a></li>
-                <li>
-                    <a href="#example-4-control-log-type" aria-label="Example 4 (Control Log Type)">Example 4 (Control Log Type)</a></li></ul>
-                </li></ul>
-                </li></ul>
-                </li>
-                <li>
-                    <a href="#answers" aria-label="Answers">Answers</a><ul>
-                        <ul>
-                        
-                <li>
-                    <a href="#extracting-log-files-from-the-file-system" aria-label="Extracting Log Files from the File System">Extracting Log Files from the File System</a></li>
-                <li>
-                    <a href="#question-1-1" aria-label="Question-1">Question-1</a></li>
-                <li>
-                    <a href="#question-2-1" aria-label="Question-2">Question-2</a></li>
-                <li>
-                    <a href="#question--3" aria-label="Question -3">Question -3</a></li>
-                <li>
-                    <a href="#question---4" aria-label="Question - 4">Question - 4</a><ul>
-                        
-                <li>
-                    <a href="#extracting-deleted-files" aria-label="Extracting deleted files">Extracting deleted files</a></li></ul>
-                </li>
-                <li>
-                    <a href="#question---5" aria-label="Question - 5">Question - 5</a></li>
-                <li>
-                    <a href="#question-6-1" aria-label="Question-6">Question-6</a><ul>
-                        
-                <li>
-                    <a href="#an-overview-on-time_updateexe" aria-label="An Overview on time_update.exe">An Overview on time_update.exe</a></li>
-                <li>
-                    <a href="#file-decryption" aria-label="File-Decryption">File-Decryption</a></li>
-                <li>
-                    <a href="#carving-out-files" aria-label="Carving Out Files">Carving Out Files</a></li></ul>
-                </li></ul>
-                    </ul>
-                </li>
-                <li>
-                    <a href="#references" aria-label="References">References</a>
-                </li>
-            </ul>
-            </li>
-            </ul>
-        </div>
-    </details>
-</div>
-
-  <div class="post-content"><p>Full detailed writeup for ReAL-File-System which is centered around ReFS Log Analysis.</p>
+<div class="row-fluid navmargin">
+    <div class="page-header">
+        <h1>ReAL-File-System-bi0sCTF2024 - Fri, Mar 8, 2024</h1>
+    </div>
+    <p class="lead"></p>
+    <p>Full detailed writeup for ReAL-File-System which is centered around ReFS Log Analysis.</p>
 <p><strong>tl;dr</strong></p>
 <ul>
 <li>Disk Forensics</li>
@@ -321,51 +51,57 @@ Log Analysis
 <p><strong>Challenge Points</strong>: 1000
 <strong>No. of solves</strong>: 0
 <strong>Challenge Author</strong>: <a href="https://twitter.com/5h4rrK">5h4rrK</a></p>
-<h3 id="challenge-description">Challenge Description<a hidden class="anchor" aria-hidden="true" href="#challenge-description">#</a></h3>
+<h3 id="challenge-description">Challenge Description</h3>
 <p>In a desperate bid to synchronize my PC clock, I unwittingly downloaded an application that promised a quick fix but instead wrought havoc by encrypting all my important files. Turning to my DFIR friend for help, his attempts to decipher the encrypted mess only worsened the situation, leaving the filesystem corrupted. My friend told me that only a DFIR expert can help recover my files. I&rsquo;m filled with hope for their assistance in fixing my computer catastrophe.</p>
 <details>
-<h4 id="question-1"><strong>Question 1</strong><a hidden class="anchor" aria-hidden="true" href="#question-1">#</a></h4>
+<h4 id="question-1"><strong>Question 1</strong></h4>
 <p><strong>List all directories that have been renamed, including their original names and the timestamps of when they were renamed.</strong></p>
 <blockquote>
 <p>TimeZone - UTC(+05:30) [YYYY-MM-DD HH:MM:SS.XX]
-Format - [ [&lsquo;OriginalDirName&rsquo;, &lsquo;RenamedDirName&rsquo;, &lsquo;TimeStamp&rsquo;] , .. ]</p></blockquote>
-<h4 id="question-2"><strong>Question 2</strong><a hidden class="anchor" aria-hidden="true" href="#question-2">#</a></h4>
+Format - [ [&lsquo;OriginalDirName&rsquo;, &lsquo;RenamedDirName&rsquo;, &lsquo;TimeStamp&rsquo;] , .. ]</p>
+</blockquote>
+<h4 id="question-2"><strong>Question 2</strong></h4>
 <p><strong>Name all the deleted directories with deletion timestamps.</strong></p>
 <blockquote>
 <p>TimeZone : UTC(+05:30) [YYYY-MM-DD HH:MM:SS.XX]
-Format - [ [&lsquo;DirectoryName&rsquo; , &lsquo;TimeStamp&rsquo;] , .. ]</p></blockquote>
-<h4 id="question-3"><strong>Question 3</strong><a hidden class="anchor" aria-hidden="true" href="#question-3">#</a></h4>
+Format - [ [&lsquo;DirectoryName&rsquo; , &lsquo;TimeStamp&rsquo;] , .. ]</p>
+</blockquote>
+<h4 id="question-3"><strong>Question 3</strong></h4>
 <p><strong>List all directories with their creation times, including originals if any that have been renamed or deleted.</strong></p>
 <blockquote>
 <p>TimeZone : UTC(+05:30) [YYYY-MM-DD HH:MM:SS.XX]
-Format - [ [&lsquo;DirectoryName&rsquo; , &lsquo;CreatedTime&rsquo;] , &hellip;. ]</p></blockquote>
-<h4 id="question-4"><strong>Question 4</strong><a hidden class="anchor" aria-hidden="true" href="#question-4">#</a></h4>
+Format - [ [&lsquo;DirectoryName&rsquo; , &lsquo;CreatedTime&rsquo;] , &hellip;. ]</p>
+</blockquote>
+<h4 id="question-4"><strong>Question 4</strong></h4>
 <p><strong>Recover the files that have been deleted, and provide the md5sum of each recovered file.</strong></p>
 <blockquote>
-<p>Format - [ [&lsquo;file1hash&rsquo;] , [&lsquo;file2hash&rsquo;], &hellip; ]</p></blockquote>
-<h4 id="question-5"><strong>Question 5</strong><a hidden class="anchor" aria-hidden="true" href="#question-5">#</a></h4>
+<p>Format - [ [&lsquo;file1hash&rsquo;] , [&lsquo;file2hash&rsquo;], &hellip; ]</p>
+</blockquote>
+<h4 id="question-5"><strong>Question 5</strong></h4>
 <p><strong>Identify all files that have been deleted (Simple + Permanent), including their deletion timestamps.</strong></p>
 <blockquote>
 <p>TimeZone : UTC(+05:30) [YYYY-MM-DD HH:MM:SS.XX]
-Format - [ [ &lsquo;filename&rsquo; , &lsquo;TimeStamp&rsquo; , &lsquo;Simple/Permanent&rsquo; ] , .. ]</p></blockquote>
-<h4 id="question-6"><strong>Question 6</strong><a hidden class="anchor" aria-hidden="true" href="#question-6">#</a></h4>
+Format - [ [ &lsquo;filename&rsquo; , &lsquo;TimeStamp&rsquo; , &lsquo;Simple/Permanent&rsquo; ] , .. ]</p>
+</blockquote>
+<h4 id="question-6"><strong>Question 6</strong></h4>
 <p><strong>Restore all encrypted files, decrypt them, and provide the md5sum of each decrypted file after removing any extra bytes before computing the hash.</strong></p>
 <blockquote>
-<p>Format - [ [&lsquo;hash1&rsquo;] , [&lsquo;hash2&rsquo;], &lsquo;,..]</p></blockquote>
+<p>Format - [ [&lsquo;hash1&rsquo;] , [&lsquo;hash2&rsquo;], &lsquo;,..]</p>
+</blockquote>
 </details>
-<h1 id="solution">Solution<a hidden class="anchor" aria-hidden="true" href="#solution">#</a></h1>
+<h1 id="solution">Solution</h1>
 <p>To address the corruption in the file system, we&rsquo;ll initiate the repair process by examining the file system using a Hex Editor. Since the Resilient File System (ReFS) is not widely supported by forensic tools, we&rsquo;ll rely on <a href="/posts/resilient-file-system/#References">research papers</a> for its structures.</p>
 <p>The most recent version of Active Disk Editor is capable of loading ReFS, so we can load the image and confirm its integrity.</p>
-<h2 id="overview-of-refs-structure">Overview of ReFS structure<a hidden class="anchor" aria-hidden="true" href="#overview-of-refs-structure">#</a></h2>
-<p><img alt="AltText" loading="lazy" src="/posts/resilient-file-system/images/image-104.png"></p>
+<h2 id="overview-of-refs-structure">Overview of ReFS structure</h2>
+<p><img src="/posts/resilient-file-system/images/image-104.png" alt="AltText"></p>
 <p>The Volume Boot Record (VBR) serves as a reference to the <code>Superblock</code>, a crucial component. The <code>Superblock</code> references to child nodes known as <code>CheckPoint</code>.</p>
-<p><img alt="AltText" loading="lazy" src="/posts/resilient-file-system/images/image-106.png"></p>
-<p><img alt="AltText" loading="lazy" src="/posts/resilient-file-system/images/image-109.png"></p>
+<p><img src="/posts/resilient-file-system/images/image-106.png" alt="AltText"></p>
+<p><img src="/posts/resilient-file-system/images/image-109.png" alt="AltText"></p>
 <p>Our initial step would be calculating the cluster size. Later on we need this for carving out the files</p>
 <p>Cluster Size = <code>BytesPerSector * SectorsPerCluster</code></p>
 <p>ClusterSize = 0x08 * 0x200  = <code>0x1000 (4KB)</code></p>
-<h3 id="superblock">SuperBlock<a hidden class="anchor" aria-hidden="true" href="#superblock">#</a></h3>
-<p><img alt="alt text" loading="lazy" src="/posts/resilient-file-system/images/image-500.png"></p>
+<h3 id="superblock">SuperBlock</h3>
+<p><img src="/posts/resilient-file-system/images/image-500.png" alt="alt text"></p>
 <ul>
 <li>
 <p>The file system includes three SuperBlocks: one at the start and two at the end.</p>
@@ -377,8 +113,8 @@ Format - [ [ &lsquo;filename&rsquo; , &lsquo;TimeStamp&rsquo; , &lsquo;Simple/Pe
 <p>This redundancy enhances system reliability by enabling quick recovery and maintaining data integrity.</p>
 </li>
 </ul>
-<h3 id="checkpoint">CheckPoint<a hidden class="anchor" aria-hidden="true" href="#checkpoint">#</a></h3>
-<p><img alt="alt text" loading="lazy" src="/posts/resilient-file-system/images/image-501.png"></p>
+<h3 id="checkpoint">CheckPoint</h3>
+<p><img src="/posts/resilient-file-system/images/image-501.png" alt="alt text"></p>
 <ul>
 <li>
 <p>The file system has two CheckPoints.</p>
@@ -443,30 +179,30 @@ Format - [ [ &lsquo;filename&rsquo; , &lsquo;TimeStamp&rsquo; , &lsquo;Simple/Pe
 <ul>
 <li>Within the filesystem, there are three SuperBlocks and two Checkpoints. Fixing any one of these SuperBlocks and Checkpoints will resolve the issue at hand.</li>
 </ul>
-<p><img alt="AltText" loading="lazy" src="/posts/resilient-file-system/images/image-101.png"></p>
+<p><img src="/posts/resilient-file-system/images/image-101.png" alt="AltText"></p>
 <ul>
 <li>LCN1 : <code>0x1e</code></li>
 <li>Offset : 0x1e * 0x1000 = <strong>0x1e000</strong></li>
 </ul>
-<p><img alt="AltText" loading="lazy" src="/posts/resilient-file-system/images/image-102.png"></p>
+<p><img src="/posts/resilient-file-system/images/image-102.png" alt="AltText"></p>
 <ul>
 <li>LCN1 : <code>0x0f7ffd</code></li>
 </ul>
-<p><img alt="AltText" loading="lazy" src="/posts/resilient-file-system/images/image-103.png"></p>
+<p><img src="/posts/resilient-file-system/images/image-103.png" alt="AltText"></p>
 <ul>
 <li>LCN1 : <code>0x0f7ffe</code></li>
 </ul>
-<p><img alt="AltText" loading="lazy" src="image100.png"></p>
+<p><img src="image100.png" alt="AltText"></p>
 <ul>
 <li>LCN1 : <code>0x27d0</code></li>
 </ul>
-<p><img alt="AltText" loading="lazy" src="image.png"></p>
+<p><img src="image.png" alt="AltText"></p>
 <ul>
 <li>LCN1 : <code>0x01dc48</code></li>
 </ul>
 <p>Now, let&rsquo;s proceed by opening the file system image in Active Disk Editor.</p>
-<p><img alt="AltText" loading="lazy" src="/posts/resilient-file-system/images/image-105.png"></p>
-<h3 id="logfile">LogFile<a hidden class="anchor" aria-hidden="true" href="#logfile">#</a></h3>
+<p><img src="/posts/resilient-file-system/images/image-105.png" alt="AltText"></p>
+<h3 id="logfile">LogFile</h3>
 <p>A logfile is a metadata file that stores transactional data to facilitate the recovery of the file system to a consistent state in the event of system crashes and unexpected conditions</p>
 <ul>
 <li>
@@ -485,35 +221,36 @@ Format - [ [ &lsquo;filename&rsquo; , &lsquo;TimeStamp&rsquo; , &lsquo;Simple/Pe
 <p>We can locate the LogFile by searching <code>MLog</code>and ignores the first two <code>MLog</code> pages (control log type).</p>
 </li>
 </ul>
-<h3 id="refs-logfile-vs-ntfs-logfile">ReFS LogFile vs NTFS $LogFile<a hidden class="anchor" aria-hidden="true" href="#refs-logfile-vs-ntfs-logfile">#</a></h3>
-<p><img alt="alt text" loading="lazy" src="/posts/resilient-file-system/images/image-502.png"></p>
+<h3 id="refs-logfile-vs-ntfs-logfile">ReFS LogFile vs NTFS $LogFile</h3>
+<p><img src="/posts/resilient-file-system/images/image-502.png" alt="alt text"></p>
 <p><em>Fig : Redo Structure of ReFS</em></p>
-<p><img alt="alt text" loading="lazy" src="/posts/resilient-file-system/images/image-504.png"></p>
+<p><img src="/posts/resilient-file-system/images/image-504.png" alt="alt text"></p>
 <p><em>Fig : Structure of Operation Record of NTFS $LogFile</em></p>
 <p>Read <a href="https://eudl.eu/pdf/10.1007/978-3-642-35515-8_18">Finding Forensic Information on Creating a Folder in $LogFile of NTFS </a></p>
 <p>Now, let&rsquo;s explore the structure of the ReFS LogFile in detail.</p>
-<h3 id="refs-logfile-structure">ReFS LogFile Structure<a hidden class="anchor" aria-hidden="true" href="#refs-logfile-structure">#</a></h3>
-<p><img alt="AltText" loading="lazy" src="/posts/resilient-file-system/images/image-201.png"></p>
-<h4 id="explanation">Explanation<a hidden class="anchor" aria-hidden="true" href="#explanation">#</a></h4>
-<h4 id="entry-header-and-log-record-header">Entry Header and Log Record Header<a hidden class="anchor" aria-hidden="true" href="#entry-header-and-log-record-header">#</a></h4>
-<p><img alt="AltText" loading="lazy" src="/posts/resilient-file-system/images/image-204.png"></p>
+<h3 id="refs-logfile-structure">ReFS LogFile Structure</h3>
+<p><img src="/posts/resilient-file-system/images/image-201.png" alt="AltText"></p>
+<h4 id="explanation">Explanation</h4>
+<h4 id="entry-header-and-log-record-header">Entry Header and Log Record Header</h4>
+<p><img src="/posts/resilient-file-system/images/image-204.png" alt="AltText"></p>
 <blockquote>
 <p>Red Bounded Area -&gt; <code>ReFS Entry Header</code>
-Green Bounded Area -&gt; <code>ReFS Log Header</code></p></blockquote>
-<h4 id="log-record">Log Record<a hidden class="anchor" aria-hidden="true" href="#log-record">#</a></h4>
-<p><img alt="alt text" loading="lazy" src="/posts/resilient-file-system/images/image-207.png"></p>
-<h4 id="redo-record-header">Redo Record Header<a hidden class="anchor" aria-hidden="true" href="#redo-record-header">#</a></h4>
-<p><img alt="AltText" loading="lazy" src="/posts/resilient-file-system/images/image-208.png"></p>
+Green Bounded Area -&gt; <code>ReFS Log Header</code></p>
+</blockquote>
+<h4 id="log-record">Log Record</h4>
+<p><img src="/posts/resilient-file-system/images/image-207.png" alt="alt text"></p>
+<h4 id="redo-record-header">Redo Record Header</h4>
+<p><img src="/posts/resilient-file-system/images/image-208.png" alt="AltText"></p>
 <p>Redo Log Header Size : 0x38 bytes</p>
-<h4 id="redo-data-offset-array">Redo Data Offset Array<a hidden class="anchor" aria-hidden="true" href="#redo-data-offset-array">#</a></h4>
-<p><img alt="AltText" loading="lazy" src="/posts/resilient-file-system/images/image-209.png"></p>
+<h4 id="redo-data-offset-array">Redo Data Offset Array</h4>
+<p><img src="/posts/resilient-file-system/images/image-209.png" alt="AltText"></p>
 <p><code>Tail Offset</code> : <em>indicates ending of data offset array</em></p>
 <p><code>Tail Size</code>: <em>size of each transaction</em></p>
-<h4 id="redo-transactional-data">Redo Transactional Data<a hidden class="anchor" aria-hidden="true" href="#redo-transactional-data">#</a></h4>
-<h5 id="example-1">Example 1<a hidden class="anchor" aria-hidden="true" href="#example-1">#</a></h5>
-<p><img alt="AltText" loading="lazy" src="/posts/resilient-file-system/images/image-210.png"></p>
-<h5 id="example-2">Example 2<a hidden class="anchor" aria-hidden="true" href="#example-2">#</a></h5>
-<p><img alt="AltText" loading="lazy" src="/posts/resilient-file-system/images/image-211.png"></p>
+<h4 id="redo-transactional-data">Redo Transactional Data</h4>
+<h5 id="example-1">Example 1</h5>
+<p><img src="/posts/resilient-file-system/images/image-210.png" alt="AltText"></p>
+<h5 id="example-2">Example 2</h5>
+<p><img src="/posts/resilient-file-system/images/image-211.png" alt="AltText"></p>
 <div class="highlight"><pre tabindex="0" class="chroma"><code class="language-py" data-lang="py"><span class="line"><span class="cl"><span class="n">REFS_REDO_REC_HDR_FIELDS</span> <span class="o">=</span> <span class="p">[</span>
 </span></span><span class="line"><span class="cl">    <span class="s1">&#39;redo_rec_size&#39;</span><span class="p">,</span> <span class="s1">&#39;opcode&#39;</span><span class="p">,</span> <span class="s1">&#39;tablekeys_count&#39;</span><span class="p">,</span> <span class="s1">&#39;tablekeys_offset&#39;</span><span class="p">,</span>
 </span></span><span class="line"><span class="cl">    <span class="s1">&#39;value_count&#39;</span><span class="p">,</span> <span class="s1">&#39;value_offset&#39;</span><span class="p">,</span> <span class="s1">&#39;unknown1&#39;</span><span class="p">,</span>
@@ -556,51 +293,53 @@ Green Bounded Area -&gt; <code>ReFS Log Header</code></p></blockquote>
 </span></span><span class="line"><span class="cl">
 </span></span><span class="line"><span class="cl">        <span class="k">return</span> <span class="n">transaction</span>
 </span></span></code></pre></div><p><em>Source: <a href="https://github.com/horensic/ARIN">ARIN</a></em></p>
-<h5 id="example-3">Example 3<a hidden class="anchor" aria-hidden="true" href="#example-3">#</a></h5>
-<p><img alt="alt text" loading="lazy" src="/posts/resilient-file-system/images/image-9.png"></p>
-<h5 id="example-4-control-log-type">Example 4 (Control Log Type)<a hidden class="anchor" aria-hidden="true" href="#example-4-control-log-type">#</a></h5>
-<p><img alt="alt text" loading="lazy" src="/posts/resilient-file-system/images/image-505.png"></p>
+<h5 id="example-3">Example 3</h5>
+<p><img src="/posts/resilient-file-system/images/image-9.png" alt="alt text"></p>
+<h5 id="example-4-control-log-type">Example 4 (Control Log Type)</h5>
+<p><img src="/posts/resilient-file-system/images/image-505.png" alt="alt text"></p>
 <p><em>Fig : Control Log Type</em></p>
-<h2 id="answers">Answers<a hidden class="anchor" aria-hidden="true" href="#answers">#</a></h2>
-<h4 id="extracting-log-files-from-the-file-system">Extracting Log Files from the File System<a hidden class="anchor" aria-hidden="true" href="#extracting-log-files-from-the-file-system">#</a></h4>
+<h2 id="answers">Answers</h2>
+<h4 id="extracting-log-files-from-the-file-system">Extracting Log Files from the File System</h4>
 <div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">dd <span class="k">if</span><span class="o">=</span>ReAL_File_System.001 <span class="nv">skip</span><span class="o">=</span><span class="k">$((</span><span class="m">0</span>x20001000<span class="k">))</span> <span class="nv">count</span><span class="o">=</span><span class="k">$((</span><span class="m">0</span>x200A7000 <span class="o">-</span><span class="m">0</span>x20001000<span class="k">))</span> <span class="nv">of</span><span class="o">=</span>logs.txt <span class="nv">bs</span><span class="o">=</span><span class="m">1</span>
-</span></span></code></pre></div><h4 id="question-1-1">Question-1<a hidden class="anchor" aria-hidden="true" href="#question-1-1">#</a></h4>
+</span></span></code></pre></div><h4 id="question-1-1">Question-1</h4>
 <ol>
 <li>List all directories that have been renamed, including their original names and the timestamps of when they were renamed.</li>
 </ol>
 <blockquote>
-<p><strong>Format :[ [&lsquo;OriginalDirName&rsquo;, &lsquo;RenamedDirName&rsquo;, TimeStamp] , .. ]</strong></p></blockquote>
+<p><strong>Format :[ [&lsquo;OriginalDirName&rsquo;, &lsquo;RenamedDirName&rsquo;, TimeStamp] , .. ]</strong></p>
+</blockquote>
 <p>To identify renamed directories in ReFS, search for the specific opcodes related to directory renaming. By examining consecutive MLog entries associated with these opcodes, we can reveal the timestamps indicating when the renaming occurred.</p>
 <p>To locate directories in the LogFile, search for the hexadecimal values <code>30 00 02 00</code>, which serve as prefixes for directory entries. Conversely, the value <code>30 00 01 00</code> typically indicates file entries. However, it&rsquo;s essential to note that there may be some false positives in the search results.</p>
 <ul>
 <li>File Prefix (from <a href="https://github.com/jamemanionda/ReFS_Detector">ReFS Detector</a>) : <code>30 01 00 00 80 01 00 00 00 00 00 00 30 00 01 00</code></li>
 </ul>
 <p>Directory Renamed Opcode : <strong><code>0x2 -&gt; 0x2 -&gt; 0x1 -&gt; 0x1 -&gt; 0x4</code></strong></p>
-<p><img alt="AltText" loading="lazy" src="/posts/resilient-file-system/images/image-38.png"></p>
-<p><img alt="AltText" loading="lazy" src="/posts/resilient-file-system/images/image-39.png"></p>
+<p><img src="/posts/resilient-file-system/images/image-38.png" alt="AltText"></p>
+<p><img src="/posts/resilient-file-system/images/image-39.png" alt="AltText"></p>
 <p>Timestamp will be found in next <code>MLog</code> page (starting with opcode <code>0x4</code>).</p>
-<p><img alt="AltText" loading="lazy" src="/posts/resilient-file-system/images/image-55.png"></p>
-<p><img alt="AltText" loading="lazy" src="/posts/resilient-file-system/images/image-40.png"></p>
+<p><img src="/posts/resilient-file-system/images/image-55.png" alt="AltText"></p>
+<p><img src="/posts/resilient-file-system/images/image-40.png" alt="AltText"></p>
 <p>The timestamp in the ReFS LogFile is in Little-Endian format. To convert it to UTC +5:30, we can use <a href="https://www.digital-detective.net/dcode/">DCode</a> tool.</p>
 <p><em>[&rsquo;e88e52cac&rsquo;, &lsquo;88077a4a1370&rsquo;, &lsquo;2024-02-18 13:10:20.49&rsquo;]</em></p>
 <p>We can write a script to automate the process.</p>
 <p><em>[&lsquo;fb828d071&rsquo;, &lsquo;cad090f9724d&rsquo;, &lsquo;2024-02-18 13:12:12.48&rsquo;]</em></p>
 <p><strong>Final Ans</strong></p>
 <div class="highlight"><pre tabindex="0" class="chroma"><code class="language-python" data-lang="python"><span class="line"><span class="cl">   <span class="p">[</span> <span class="p">[</span><span class="s1">&#39;e88e52cac&#39;</span><span class="p">,</span> <span class="s1">&#39;88077a4a1370&#39;</span><span class="p">,</span> <span class="s1">&#39;2024-02-18 13:10:20.49&#39;</span><span class="p">],</span> <span class="p">[</span><span class="s1">&#39;fb828d071&#39;</span><span class="p">,</span><span class="s1">&#39;cad090f9724d&#39;</span><span class="p">,</span> <span class="s1">&#39;2024-02-18 13:12:12.48&#39;</span><span class="p">]</span> <span class="p">]</span>
-</span></span></code></pre></div><h4 id="question-2-1">Question-2<a hidden class="anchor" aria-hidden="true" href="#question-2-1">#</a></h4>
+</span></span></code></pre></div><h4 id="question-2-1">Question-2</h4>
 <ol start="2">
 <li>Name all the deleted directories with deletion timestamps.</li>
 </ol>
 <blockquote>
-<p><strong>Format : [ [&lsquo;DirectoryName&rsquo; , &lsquo;TimeStamp&rsquo;] , .. ]</strong></p></blockquote>
+<p><strong>Format : [ [&lsquo;DirectoryName&rsquo; , &lsquo;TimeStamp&rsquo;] , .. ]</strong></p>
+</blockquote>
 <p>Deletions can occur in two ways: Simple and Permanent.</p>
 <p>Opcode for Permanent Deletion</p>
 <div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">0x2 -&gt; 0xf -&gt; 0x2 -&gt; 0xf -&gt; 0x4 -&gt; 0x12
-</span></span></code></pre></div><p><img alt="AltText" loading="lazy" src="/posts/resilient-file-system/images/image-44.png"></p>
-<p><img alt="AltText" loading="lazy" src="/posts/resilient-file-system/images/image-41.png"></p>
+</span></span></code></pre></div><p><img src="/posts/resilient-file-system/images/image-44.png" alt="AltText"></p>
+<p><img src="/posts/resilient-file-system/images/image-41.png" alt="AltText"></p>
 <p>To find the remaining opcodes, you can search in the next <code>MLog</code> entries. The timestamp can be found in opcode <code>0x04</code>.</p>
-<p><img alt="AltText" loading="lazy" src="/posts/resilient-file-system/images/image-42.png">
-<img alt="AltText" loading="lazy" src="/posts/resilient-file-system/images/image-43.png"></p>
+<p><img src="/posts/resilient-file-system/images/image-42.png" alt="AltText">
+<img src="/posts/resilient-file-system/images/image-43.png" alt="AltText"></p>
 <p><strong>Permanently Deleted Directories</strong></p>
 <div class="highlight"><pre tabindex="0" class="chroma"><code class="language-py" data-lang="py"><span class="line"><span class="cl"><span class="p">[</span>
 </span></span><span class="line"><span class="cl">     <span class="p">[</span><span class="s1">&#39;f8f1c218f9&#39;</span><span class="p">,</span> <span class="s1">&#39;2024-02-18 13:11:28.57&#39;</span><span class="p">],</span>
@@ -609,37 +348,39 @@ Green Bounded Area -&gt; <code>ReFS Log Header</code></p></blockquote>
 </span></span></code></pre></div><p>Simple Deleted Directory Opcode</p>
 <div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">P<span class="o">(</span>Directory Creation<span class="o">)</span> → 0x06 → 0x04 → 0x04 → 0x04 → 0x04 → 0x03 → 0x02 → 0x02 → 0x01 → 0x01 → 0x0e → 0x04 → 0x03 → 0x04 → 0x04 → 0x04 → 0x01 → 0x04 → 0x03 → 0x04 → 0x04 → 0x08
 </span></span></code></pre></div><p>After a directory is created, the opcode follows. It&rsquo;s important to note that directories created with names starting with <code>$</code> can be easily distinguished from other directory creations.</p>
-<p><img alt="AltText" loading="lazy" src="/posts/resilient-file-system/images/image-45.png"></p>
-<p><img alt="AltText" loading="lazy" src="/posts/resilient-file-system/images/image-213.png"></p>
-<p><img alt="AltText" loading="lazy" src="/posts/resilient-file-system/images/image-50.png"></p>
-<p><img alt="AltText" loading="lazy" src="/posts/resilient-file-system/images/image-52.png"></p>
-<p><img alt="AltText" loading="lazy" src="/posts/resilient-file-system/images/image-48.png"></p>
-<p><img alt="AltText" loading="lazy" src="/posts/resilient-file-system/images/image-46.png"></p>
-<p><img alt="AltText" loading="lazy" src="/posts/resilient-file-system/images/image-47.png"></p>
+<p><img src="/posts/resilient-file-system/images/image-45.png" alt="AltText"></p>
+<p><img src="/posts/resilient-file-system/images/image-213.png" alt="AltText"></p>
+<p><img src="/posts/resilient-file-system/images/image-50.png" alt="AltText"></p>
+<p><img src="/posts/resilient-file-system/images/image-52.png" alt="AltText"></p>
+<p><img src="/posts/resilient-file-system/images/image-48.png" alt="AltText"></p>
+<p><img src="/posts/resilient-file-system/images/image-46.png" alt="AltText"></p>
+<p><img src="/posts/resilient-file-system/images/image-47.png" alt="AltText"></p>
 <div class="highlight"><pre tabindex="0" class="chroma"><code class="language-py" data-lang="py"><span class="line"><span class="cl"> <span class="p">[</span><span class="s1">&#39;c062fb828&#39;</span><span class="p">,</span> <span class="s1">&#39;2024-02-18 13:10:48.62&#39;</span><span class="p">]</span>
 </span></span></code></pre></div><p>Alternatively, another method to determine the deletion timestamp is by analyzing <code>$IXXXXX</code> entries.</p>
-<p><img alt="AltText" loading="lazy" src="/posts/resilient-file-system/images/image-214.png"></p>
-<p><img alt="AltText" loading="lazy" src="/posts/resilient-file-system/images/image-215.png"></p>
+<p><img src="/posts/resilient-file-system/images/image-214.png" alt="AltText"></p>
+<p><img src="/posts/resilient-file-system/images/image-215.png" alt="AltText"></p>
 <p><strong>Final Ans</strong></p>
 <div class="highlight"><pre tabindex="0" class="chroma"><code class="language-py" data-lang="py"><span class="line"><span class="cl"><span class="p">[</span>
 </span></span><span class="line"><span class="cl">     <span class="p">[</span><span class="s1">&#39;f8f1c218f9&#39;</span><span class="p">,</span> <span class="s1">&#39;2024-02-18 13:11:28.57&#39;</span><span class="p">],</span>
 </span></span><span class="line"><span class="cl">     <span class="p">[</span><span class="s1">&#39;de34f60ab&#39;</span><span class="p">,</span>  <span class="s1">&#39;2024-02-18 13:13:19.60&#39;</span><span class="p">],</span>
 </span></span><span class="line"><span class="cl">     <span class="p">[</span><span class="s1">&#39;c062fb828&#39;</span><span class="p">,</span>  <span class="s1">&#39;2024-02-18 13:10:48.62&#39;</span><span class="p">]</span>
 </span></span><span class="line"><span class="cl"><span class="p">]</span>
-</span></span></code></pre></div><h4 id="question--3">Question -3<a hidden class="anchor" aria-hidden="true" href="#question--3">#</a></h4>
+</span></span></code></pre></div><h4 id="question--3">Question -3</h4>
 <hr>
 <ol start="3">
 <li>List all directories with their creation times, including renamed and deleted.</li>
 </ol>
 <blockquote>
-<p><strong>Note : If a directory was renamed, include its original name and creation time.</strong></p></blockquote>
+<p><strong>Note : If a directory was renamed, include its original name and creation time.</strong></p>
+</blockquote>
 <blockquote>
-<p><strong>Fomat : [ [&lsquo;DirectoryName&rsquo; , &lsquo;CreatedTime&rsquo;] , &hellip;. ]</strong></p></blockquote>
+<p><strong>Fomat : [ [&lsquo;DirectoryName&rsquo; , &lsquo;CreatedTime&rsquo;] , &hellip;. ]</strong></p>
+</blockquote>
 <p>Dir Creation</p>
 <div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">0x00 → 0x00 → 0x04 → 0x10 → 0x01 → 0x01 → 0x01 → 0x0e → 0x03 → 0x04
-</span></span></code></pre></div><p><img alt="AltText" loading="lazy" src="/posts/resilient-file-system/images/image-54.png"></p>
-<p><img alt="AltText" loading="lazy" src="/posts/resilient-file-system/images/image-53.png"></p>
-<p><img alt="AltText" loading="lazy" src="/posts/resilient-file-system/images/image-56.png"></p>
+</span></span></code></pre></div><p><img src="/posts/resilient-file-system/images/image-54.png" alt="AltText"></p>
+<p><img src="/posts/resilient-file-system/images/image-53.png" alt="AltText"></p>
+<p><img src="/posts/resilient-file-system/images/image-56.png" alt="AltText"></p>
 <p><strong><em>Final Ans</em></strong></p>
 <div class="highlight"><pre tabindex="0" class="chroma"><code class="language-py" data-lang="py"><span class="line"><span class="cl">    <span class="p">[</span>
 </span></span><span class="line"><span class="cl">        <span class="p">[</span><span class="s1">&#39;de34f60ab&#39;</span><span class="p">,</span> <span class="s1">&#39;2024-02-18 13:06:59.22&#39;</span><span class="p">],</span>
@@ -649,17 +390,18 @@ Green Bounded Area -&gt; <code>ReFS Log Header</code></p></blockquote>
 </span></span><span class="line"><span class="cl">        <span class="p">[</span><span class="s1">&#39;c062fb828&#39;</span><span class="p">,</span> <span class="s1">&#39;2024-02-18 13:09:14.55&#39;</span><span class="p">],</span>
 </span></span><span class="line"><span class="cl">        <span class="p">[</span><span class="s1">&#39;bb6de6190&#39;</span><span class="p">,</span> <span class="s1">&#39;2024-02-18 13:09:34.00&#39;</span><span class="p">]</span>
 </span></span><span class="line"><span class="cl">    <span class="p">]</span>
-</span></span></code></pre></div><h4 id="question---4">Question - 4<a hidden class="anchor" aria-hidden="true" href="#question---4">#</a></h4>
+</span></span></code></pre></div><h4 id="question---4">Question - 4</h4>
 <hr>
 <ol start="4">
 <li>Recover the files that have been deleted, and provide the <strong>md5sum</strong> of each recovered file.</li>
 </ol>
 <blockquote>
-<p><strong>Format : [ [&lsquo;file1hash&rsquo;]&rsquo; , [&lsquo;file2hash2&rsquo;], &hellip; ]</strong></p></blockquote>
+<p><strong>Format : [ [&lsquo;file1hash&rsquo;]&rsquo; , [&lsquo;file2hash2&rsquo;], &hellip; ]</strong></p>
+</blockquote>
 <ul>
 <li>We can find files that are simply deleted.</li>
 </ul>
-<p><img alt="AltText" loading="lazy" src="/posts/resilient-file-system/images/image-57.png"></p>
+<p><img src="/posts/resilient-file-system/images/image-57.png" alt="AltText"></p>
 <ul>
 <li>
 <p><code>$IXXXXX</code> file has components like filename, fullpath , deletion time etc.</p>
@@ -668,9 +410,9 @@ Green Bounded Area -&gt; <code>ReFS Log Header</code></p></blockquote>
 <p><code>$RXXXXX</code> file contents can be recovered.</p>
 </li>
 </ul>
-<p><img alt="AltText" loading="lazy" src="/posts/resilient-file-system/images/image-59.png"></p>
-<p><img alt="AltText" loading="lazy" src="/posts/resilient-file-system/images/image-60.png"></p>
-<p><img alt="AltText" loading="lazy" src="/posts/resilient-file-system/images/image-58.png"></p>
+<p><img src="/posts/resilient-file-system/images/image-59.png" alt="AltText"></p>
+<p><img src="/posts/resilient-file-system/images/image-60.png" alt="AltText"></p>
+<p><img src="/posts/resilient-file-system/images/image-58.png" alt="AltText"></p>
 <ul>
 <li>
 <p>We can use the <strong>dd</strong> command to extract a file from an image file. We can also increase the extraction speed by adjusting the block size.</p>
@@ -682,7 +424,7 @@ Green Bounded Area -&gt; <code>ReFS Log Header</code></p></blockquote>
 <p>Copying and pasting content from Active Disk Editor works for smaller files. However, for larger files, it won&rsquo;t work :)</p>
 </li>
 </ul>
-<h5 id="extracting-deleted-files">Extracting deleted files<a hidden class="anchor" aria-hidden="true" href="#extracting-deleted-files">#</a></h5>
+<h5 id="extracting-deleted-files">Extracting deleted files</h5>
 <div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">dd <span class="k">if</span><span class="o">=</span>ReAL_File_System.001 <span class="nv">skip</span><span class="o">=</span><span class="k">$((</span><span class="o">(</span><span class="m">0</span>x1000 <span class="o">*</span> <span class="m">71168</span><span class="o">)/</span><span class="m">1</span><span class="k">))</span> <span class="nv">count</span><span class="o">=</span><span class="k">$((</span><span class="o">(</span><span class="m">0</span>x15a<span class="o">)/</span><span class="m">1</span><span class="k">))</span>  <span class="nv">bs</span><span class="o">=</span><span class="m">1</span> <span class="nv">of</span><span class="o">=</span>simple-pass.txt
 </span></span><span class="line"><span class="cl">dd <span class="k">if</span><span class="o">=</span>ReAL_File_System.001 <span class="nv">skip</span><span class="o">=</span><span class="k">$((</span><span class="o">(</span><span class="m">0</span>x1000 <span class="o">*</span> <span class="m">68608</span><span class="o">)/</span><span class="m">16</span><span class="k">))</span> <span class="nv">count</span><span class="o">=</span><span class="k">$((</span><span class="o">(</span><span class="m">0</span>x04e20<span class="o">)/</span><span class="m">16</span><span class="k">))</span>  <span class="nv">bs</span><span class="o">=</span><span class="m">16</span> <span class="nv">of</span><span class="o">=</span>19ff211f
 </span></span><span class="line"><span class="cl">dd <span class="k">if</span><span class="o">=</span>ReAL_File_System.001 <span class="nv">skip</span><span class="o">=</span><span class="k">$((</span><span class="o">(</span><span class="m">0</span>x1000 <span class="o">*</span> <span class="m">70144</span><span class="k">))</span><span class="o">)</span> <span class="nv">count</span><span class="o">=</span><span class="k">$((</span><span class="o">(</span><span class="m">0</span>x041b7<span class="k">))</span><span class="o">)</span>  <span class="nv">bs</span><span class="o">=</span><span class="m">1</span> <span class="nv">of</span><span class="o">=</span>fe0c329
@@ -695,23 +437,23 @@ Green Bounded Area -&gt; <code>ReFS Log Header</code></p></blockquote>
 </span></span><span class="line"><span class="cl">        <span class="p">[</span><span class="s1">&#39;4c009b045056af8f9bb401c69408d2cf&#39;</span><span class="p">],</span>
 </span></span><span class="line"><span class="cl">        <span class="p">[</span><span class="s1">&#39;c50c5bcb9e98537e3d63df1bc68a81d0&#39;</span><span class="p">]</span>
 </span></span><span class="line"><span class="cl">    <span class="p">]</span>
-</span></span></code></pre></div><h4 id="question---5">Question - 5<a hidden class="anchor" aria-hidden="true" href="#question---5">#</a></h4>
+</span></span></code></pre></div><h4 id="question---5">Question - 5</h4>
 <hr>
 <ol start="5">
 <li>Identify all files that have been deleted (Simple + Permanent), including their deletion timestamps.</li>
 </ol>
 <p>   <strong>Format :[ [ &lsquo;filename&rsquo; , &lsquo;TimeStamp&rsquo; , &lsquo;Simple/Permanent&rsquo; ] , .. ]</strong></p>
 <p><strong>Simple Deletion</strong>
-<img alt="AltText" loading="lazy" src="/posts/resilient-file-system/images/image-63.png"></p>
+<img src="/posts/resilient-file-system/images/image-63.png" alt="AltText"></p>
 <p><strong>Permanent Deletion</strong>
-<img alt="AltText" loading="lazy" src="/posts/resilient-file-system/images/image-62.png">
-<img alt="AltText" loading="lazy" src="/posts/resilient-file-system/images/image-61.png"></p>
+<img src="/posts/resilient-file-system/images/image-62.png" alt="AltText">
+<img src="/posts/resilient-file-system/images/image-61.png" alt="AltText"></p>
 <p>simple-pass.txt</p>
-<p><img alt="AltText" loading="lazy" src="/posts/resilient-file-system/images/image-64.png">
-<img alt="AltText" loading="lazy" src="/posts/resilient-file-system/images/image-66.png">
-<img alt="AltText" loading="lazy" src="/posts/resilient-file-system/images/image-67.png"></p>
+<p><img src="/posts/resilient-file-system/images/image-64.png" alt="AltText">
+<img src="/posts/resilient-file-system/images/image-66.png" alt="AltText">
+<img src="/posts/resilient-file-system/images/image-67.png" alt="AltText"></p>
 <p>TimeStamp</p>
-<p><img alt="AltText" loading="lazy" src="/posts/resilient-file-system/images/image-68.png"></p>
+<p><img src="/posts/resilient-file-system/images/image-68.png" alt="AltText"></p>
 <p><em>2024-02-18 13:15:00.51</em></p>
 <p>In the same manner, examine the log file and we will find the other simple deleted files</p>
 <div class="highlight"><pre tabindex="0" class="chroma"><code class="language-python" data-lang="python"><span class="line"><span class="cl"><span class="p">[</span>
@@ -721,8 +463,8 @@ Green Bounded Area -&gt; <code>ReFS Log Header</code></p></blockquote>
 </span></span><span class="line"><span class="cl"><span class="p">]</span>
 </span></span></code></pre></div><p><strong>Permanent Deleted File Opcode</strong></p>
 <div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">0x0f -&gt; 0x02 -&gt; 0x0f -&gt; 0x02 -&gt; 0x04
-</span></span></code></pre></div><p><img alt="AltText" loading="lazy" src="/posts/resilient-file-system/images/image-69.png">
-<img alt="AltText" loading="lazy" src="/posts/resilient-file-system/images/image-70.png"></p>
+</span></span></code></pre></div><p><img src="/posts/resilient-file-system/images/image-69.png" alt="AltText">
+<img src="/posts/resilient-file-system/images/image-70.png" alt="AltText"></p>
 <div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="o">(</span><span class="s1">&#39;ead47cb&#39;</span>,<span class="s1">&#39;2024-02-18 13:19:26.69&#39;</span>,<span class="s1">&#39;Permanent&#39;</span><span class="o">)</span>
 </span></span><span class="line"><span class="cl"><span class="o">(</span><span class="s1">&#39;essay.txt&#39;</span>,<span class="s1">&#39;2024-02-18 13:18:22.47&#39;</span>,<span class="s1">&#39;Permanent&#39;</span><span class="o">)</span>
 </span></span></code></pre></div><p><strong><em>Final Ans</em></strong></p>
@@ -733,13 +475,14 @@ Green Bounded Area -&gt; <code>ReFS Log Header</code></p></blockquote>
 </span></span><span class="line"><span class="cl">        <span class="p">[</span><span class="s1">&#39;ead47cb&#39;</span><span class="p">,</span><span class="s1">&#39;2024-02-18 13:19:26.69&#39;</span><span class="p">,</span><span class="s1">&#39;Permanent&#39;</span><span class="p">],</span>
 </span></span><span class="line"><span class="cl">        <span class="p">[</span><span class="s1">&#39;essay.txt&#39;</span><span class="p">,</span><span class="s1">&#39;2024-02-18 13:18:22.47&#39;</span><span class="p">,</span><span class="s1">&#39;Permanent&#39;</span><span class="p">]</span>
 </span></span><span class="line"><span class="cl">    <span class="p">]</span>
-</span></span></code></pre></div><h4 id="question-6-1">Question-6<a hidden class="anchor" aria-hidden="true" href="#question-6-1">#</a></h4>
+</span></span></code></pre></div><h4 id="question-6-1">Question-6</h4>
 <ol start="6">
 <li>Restore all encrypted files, decrypt them, and provide the <strong>md5sum</strong> of each decrypted file after removing any extra bytes before computing the hash.</li>
 </ol>
 <blockquote>
-<p><strong>Format :[[&lsquo;hash1&rsquo;], [&lsquo;hash2&rsquo;],..]</strong></p></blockquote>
-<h5 id="an-overview-on-time_updateexe">An Overview on time_update.exe<a hidden class="anchor" aria-hidden="true" href="#an-overview-on-time_updateexe">#</a></h5>
+<p><strong>Format :[[&lsquo;hash1&rsquo;], [&lsquo;hash2&rsquo;],..]</strong></p>
+</blockquote>
+<h5 id="an-overview-on-time_updateexe">An Overview on time_update.exe</h5>
 <hr>
 <ol>
 <li>
@@ -764,15 +507,15 @@ Green Bounded Area -&gt; <code>ReFS Log Header</code></p></blockquote>
 <p>Before exiting, restore the system time to its initial state.</p>
 </li>
 </ol>
-<p><img alt="AltText" loading="lazy" src="/posts/resilient-file-system/images/image-216.png">
-<img alt="AltText" loading="lazy" src="/posts/resilient-file-system/images/image-217.png">
-<img alt="AltText" loading="lazy" src="/posts/resilient-file-system/images/image-218.png">
-<img alt="AltText" loading="lazy" src="/posts/resilient-file-system/images/image-219.png">
-<img alt="AltText" loading="lazy" src="/posts/resilient-file-system/images/image-220.png">
-<img alt="AltText" loading="lazy" src="/posts/resilient-file-system/images/image-221.png">
-<img alt="AltText" loading="lazy" src="/posts/resilient-file-system/images/image-222.png">
-<img alt="AltText" loading="lazy" src="/posts/resilient-file-system/images/image-223.png"></p>
-<h5 id="file-decryption">File-Decryption<a hidden class="anchor" aria-hidden="true" href="#file-decryption">#</a></h5>
+<p><img src="/posts/resilient-file-system/images/image-216.png" alt="AltText">
+<img src="/posts/resilient-file-system/images/image-217.png" alt="AltText">
+<img src="/posts/resilient-file-system/images/image-218.png" alt="AltText">
+<img src="/posts/resilient-file-system/images/image-219.png" alt="AltText">
+<img src="/posts/resilient-file-system/images/image-220.png" alt="AltText">
+<img src="/posts/resilient-file-system/images/image-221.png" alt="AltText">
+<img src="/posts/resilient-file-system/images/image-222.png" alt="AltText">
+<img src="/posts/resilient-file-system/images/image-223.png" alt="AltText"></p>
+<h5 id="file-decryption">File-Decryption</h5>
 <ul>
 <li>
 <p>The <code>time_update.exe</code> uses two keys <code>key1</code> and hash of <code>key1</code> as key2 to encrypt the files.</p>
@@ -789,7 +532,8 @@ Green Bounded Area -&gt; <code>ReFS Log Header</code></p></blockquote>
 </ul>
 <p>Because it updates the time before encrypting the files, it leaves a trace in the log files that could potentially be used to recover key.</p>
 <blockquote>
-<p>Opcode for Renamed File : <strong><code>0x02 → 0x05 → 0x01 → 0x04 → 0x04</code></strong></p></blockquote>
+<p>Opcode for Renamed File : <strong><code>0x02 → 0x05 → 0x01 → 0x04 → 0x04</code></strong></p>
+</blockquote>
 <ul>
 <li>
 <p>Let&rsquo;s manually search for the required information. We&rsquo;ll begin by assigning filenames with the extension <code>tort</code> and then conduct a search within the log file.</p>
@@ -801,21 +545,22 @@ Green Bounded Area -&gt; <code>ReFS Log Header</code></p></blockquote>
 <p>After locating it, we&rsquo;ll parse the data and examine the previous MLog to find the corresponding filenames.</p>
 </li>
 </ul>
-<p><img alt="AltText" loading="lazy" src="/posts/resilient-file-system/images/image-600.png">
-<img alt="AltText" loading="lazy" src="/posts/resilient-file-system/images/image-1.png">
-<img alt="AltText" loading="lazy" src="/posts/resilient-file-system/images/image-2.png">
-<img alt="AltText" loading="lazy" src="/posts/resilient-file-system/images/image-3.png"></p>
+<p><img src="/posts/resilient-file-system/images/image-600.png" alt="AltText">
+<img src="/posts/resilient-file-system/images/image-1.png" alt="AltText">
+<img src="/posts/resilient-file-system/images/image-2.png" alt="AltText">
+<img src="/posts/resilient-file-system/images/image-3.png" alt="AltText"></p>
 <p>First Rename : <em><code>15005-39026.pdf -&gt; bf2f63b3</code></em></p>
 <p>Search for the <em><code>bf2f63b3</code></em>.</p>
-<p><img alt="AltText" loading="lazy" src="/posts/resilient-file-system/images/image-5.png">
-<img alt="AltText" loading="lazy" src="/posts/resilient-file-system/images/image-6.png">
-<img alt="AltText" loading="lazy" src="/posts/resilient-file-system/images/image-7.png"></p>
+<p><img src="/posts/resilient-file-system/images/image-5.png" alt="AltText">
+<img src="/posts/resilient-file-system/images/image-6.png" alt="AltText">
+<img src="/posts/resilient-file-system/images/image-7.png" alt="AltText"></p>
 <p>Second Rename : <em><code>bf2f6b3 -&gt; 0cf51fbc</code></em></p>
 <blockquote>
-<p>The system time is expressed in Coordinated Universal Time (UTC).</p></blockquote>
+<p>The system time is expressed in Coordinated Universal Time (UTC).</p>
+</blockquote>
 <p>Rename Time(Encryption Key) : <em><code>2010-02-26 12:38:43.0000000 </code></em></p>
 <pre tabindex="0"><code>Enc Key Time : 2010 2 2 26 12 38 43 0
-</code></pre><p><img alt="AltText" loading="lazy" src="/posts/resilient-file-system/images/image-8.png"></p>
+</code></pre><p><img src="/posts/resilient-file-system/images/image-8.png" alt="AltText"></p>
 <p>Third Rename : <em><code>0cf51fbc -&gt; 0cf51fbc.tort</code></em></p>
 <p>Similarly, locate the timestamps used for encryption on all remaining files, and then proceed to extract those files accordingly.</p>
 <p><code>binary-01.gif -&gt; c7982ef6 -&gt; a917438f -&gt; a917438f.tort</code> : <strong>1995 2 2 27 2 11 42 0</strong></p>
@@ -826,50 +571,58 @@ Green Bounded Area -&gt; <code>ReFS Log Header</code></p></blockquote>
 <p><code>ySq12b0T.mp4 -&gt; 86c66c9c -&gt; 185c65f8 -&gt; 185c65f8.tort</code> : <strong>2007 7 2 28 3 27 33 0</strong></p>
 <p><code>vl36hkjkzbh91.png -&gt; 313feb6e -&gt; cc876a3b -&gt; cc876a3b.tort</code> : <strong>1985 3 2 4 16 23 53 0</strong></p>
 <hr>
-<p><img alt="AltText" loading="lazy" src="/posts/resilient-file-system/images/image-224.png"></p>
-<h5 id="carving-out-files">Carving Out Files<a hidden class="anchor" aria-hidden="true" href="#carving-out-files">#</a></h5>
+<p><img src="/posts/resilient-file-system/images/image-224.png" alt="AltText"></p>
+<h5 id="carving-out-files">Carving Out Files</h5>
 <blockquote>
-<p>0cf51fbc.tort</p></blockquote>
-<p><img alt="AltText" loading="lazy" src="/posts/resilient-file-system/images/image-20.png">
-<img alt="AltText" loading="lazy" src="/posts/resilient-file-system/images/image-21.png">
-<img alt="AltText" loading="lazy" src="/posts/resilient-file-system/images/image-22.png"></p>
+<p>0cf51fbc.tort</p>
+</blockquote>
+<p><img src="/posts/resilient-file-system/images/image-20.png" alt="AltText">
+<img src="/posts/resilient-file-system/images/image-21.png" alt="AltText">
+<img src="/posts/resilient-file-system/images/image-22.png" alt="AltText"></p>
 <div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">dd <span class="k">if</span><span class="o">=</span>ReAL_File_System.001 <span class="nv">skip</span><span class="o">=</span><span class="k">$((</span><span class="o">(</span><span class="m">0</span>x10e94000<span class="o">)/</span><span class="m">4096</span><span class="k">))</span> <span class="nv">count</span><span class="o">=</span><span class="k">$((</span><span class="o">(</span><span class="m">0</span>x16c000<span class="o">)/</span><span class="m">4096</span><span class="k">))</span>  <span class="nv">bs</span><span class="o">=</span><span class="m">4096</span> <span class="nv">of</span><span class="o">=</span>0cf51fbc_1.tort
 </span></span><span class="line"><span class="cl">dd <span class="k">if</span><span class="o">=</span>ReAL_File_System.001 <span class="nv">skip</span><span class="o">=</span><span class="k">$((</span><span class="o">(</span><span class="m">0</span>x11001000<span class="o">)/</span><span class="m">4096</span><span class="k">))</span> <span class="nv">count</span><span class="o">=</span><span class="k">$((</span><span class="o">(</span><span class="m">0</span>x141000<span class="o">)/</span><span class="m">4096</span><span class="k">))</span>  <span class="nv">bs</span><span class="o">=</span><span class="m">4096</span> <span class="nv">of</span><span class="o">=</span>0cf51fbc_2.tort
 </span></span><span class="line"><span class="cl">cat 0cf51fbc_1.tort 0cf51fbc_2.tort &gt; 0cf51fbc.tort
 </span></span></code></pre></div><blockquote>
-<p>a917438f.tort</p></blockquote>
+<p>a917438f.tort</p>
+</blockquote>
 <div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">dd <span class="k">if</span><span class="o">=</span>ReAL_File_System.001 <span class="nv">skip</span><span class="o">=</span><span class="k">$((</span><span class="o">(</span><span class="m">0</span>x10025000<span class="o">)/</span><span class="m">64</span><span class="k">))</span> <span class="nv">count</span><span class="o">=</span><span class="k">$((</span><span class="o">(</span><span class="m">0</span>x89ce40<span class="o">)/</span><span class="m">64</span><span class="k">))</span>  <span class="nv">bs</span><span class="o">=</span><span class="m">64</span> <span class="nv">of</span><span class="o">=</span>a917438f.tort
 </span></span></code></pre></div><p>Remove the extra bytes from the extracted files present due to the block size used during extraction.</p>
-<p><img alt="AltText" loading="lazy" src="/posts/resilient-file-system/images/image-28.png"></p>
+<p><img src="/posts/resilient-file-system/images/image-28.png" alt="AltText"></p>
 <hr>
 <blockquote>
-<p>7a6c7166.tort</p></blockquote>
-<p><img alt="AltText" loading="lazy" src="/posts/resilient-file-system/images/image-30.png">
-<img alt="AltText" loading="lazy" src="/posts/resilient-file-system/images/image-29.png">
-<img alt="AltText" loading="lazy" src="/posts/resilient-file-system/images/image-32.png"></p>
+<p>7a6c7166.tort</p>
+</blockquote>
+<p><img src="/posts/resilient-file-system/images/image-30.png" alt="AltText">
+<img src="/posts/resilient-file-system/images/image-29.png" alt="AltText">
+<img src="/posts/resilient-file-system/images/image-32.png" alt="AltText"></p>
 <p>Go to offset <code>0x108c2000</code>, <code>0x10c05000</code> &amp; read <code>830 * 0x1000</code> ,<code>130 * 0x1000</code>bytes respectively</p>
 <div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"> dd <span class="k">if</span><span class="o">=</span>ReAL_File_System.001 <span class="nv">skip</span><span class="o">=</span><span class="k">$((</span><span class="o">(</span><span class="m">0</span>x108c2000<span class="o">)/</span><span class="m">8192</span><span class="k">))</span> <span class="nv">count</span><span class="o">=</span><span class="k">$((</span><span class="o">(</span><span class="m">830</span> <span class="o">*</span> <span class="m">0</span>x1000<span class="o">)/</span><span class="m">8192</span><span class="k">))</span>  <span class="nv">bs</span><span class="o">=</span><span class="m">8192</span> <span class="nv">of</span><span class="o">=</span>7a6c7166_1.tort
 </span></span><span class="line"><span class="cl"> dd <span class="k">if</span><span class="o">=</span>ReAL_File_System.001 <span class="nv">skip</span><span class="o">=</span><span class="k">$((</span><span class="o">(</span><span class="m">0</span>x10c05000<span class="o">)/</span><span class="m">4096</span><span class="k">))</span> <span class="nv">count</span><span class="o">=</span><span class="k">$((</span><span class="o">(</span><span class="m">130</span> <span class="o">*</span> <span class="m">0</span>x1000<span class="o">)/</span><span class="m">4096</span><span class="k">))</span>  <span class="nv">bs</span><span class="o">=</span><span class="m">4096</span> <span class="nv">of</span><span class="o">=</span>7a6c7166_2.tort
 </span></span><span class="line"><span class="cl"> cat 7a6c7166_1.tort 7a6c7166_2.tort &gt; 7a6c7166.tort
 </span></span></code></pre></div><hr>
 <blockquote>
-<p>185c65f8.tort</p></blockquote>
+<p>185c65f8.tort</p>
+</blockquote>
 <div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">dd <span class="k">if</span><span class="o">=</span>ReAL_File_System.001 <span class="nv">skip</span><span class="o">=</span><span class="k">$((</span><span class="o">(</span><span class="m">68743</span> <span class="o">*</span> <span class="m">0</span>x1000<span class="o">)/</span><span class="m">4096</span><span class="k">))</span> <span class="nv">count</span><span class="o">=</span><span class="k">$((</span><span class="o">(</span><span class="m">525</span> <span class="o">*</span> <span class="m">0</span>x1000<span class="o">)/</span><span class="m">4096</span><span class="k">))</span>  <span class="nv">bs</span><span class="o">=</span><span class="m">4096</span> <span class="nv">of</span><span class="o">=</span>185c65f8.tort
 </span></span></code></pre></div><hr>
 <blockquote>
-<p>24819686.tort</p></blockquote>
+<p>24819686.tort</p>
+</blockquote>
 <div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">dd <span class="k">if</span><span class="o">=</span>ReAL_File_System.001 <span class="nv">skip</span><span class="o">=</span><span class="k">$((</span><span class="o">(</span><span class="m">0</span>x12800000<span class="o">)/</span><span class="m">4096</span><span class="k">))</span> <span class="nv">count</span><span class="o">=</span><span class="k">$((</span><span class="o">(</span><span class="m">0</span>x10000<span class="o">)/</span><span class="m">4096</span><span class="k">))</span>  <span class="nv">bs</span><span class="o">=</span><span class="m">4096</span> <span class="nv">of</span><span class="o">=</span>24819686.tort
 </span></span></code></pre></div><hr>
 <blockquote>
-<p>3a7fab71.tort</p></blockquote>
+<p>3a7fab71.tort</p>
+</blockquote>
 <div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">dd <span class="k">if</span><span class="o">=</span>ReAL_File_System.001 <span class="nv">skip</span><span class="o">=</span><span class="k">$((</span><span class="o">(</span><span class="m">0</span>x10000000<span class="o">)/</span><span class="m">4096</span><span class="k">))</span> <span class="nv">count</span><span class="o">=</span><span class="k">$((</span><span class="o">(</span><span class="m">0</span>x25000<span class="o">)/</span><span class="m">4096</span><span class="k">))</span>  <span class="nv">bs</span><span class="o">=</span><span class="m">4096</span> <span class="nv">of</span><span class="o">=</span>3a7fab71.tort
 </span></span></code></pre></div><hr>
 <blockquote>
-<p>bb292337.tort</p></blockquote>
+<p>bb292337.tort</p>
+</blockquote>
 <div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">dd <span class="k">if</span><span class="o">=</span>ReAL_File_System.001 <span class="nv">skip</span><span class="o">=</span><span class="k">$((</span><span class="o">(</span><span class="m">0</span>x13a00000<span class="o">)/</span><span class="m">4096</span><span class="k">))</span> <span class="nv">count</span><span class="o">=</span><span class="k">$((</span><span class="o">(</span><span class="m">0</span>x8000<span class="o">)/</span><span class="m">4096</span><span class="k">))</span>  <span class="nv">bs</span><span class="o">=</span><span class="m">4096</span> <span class="nv">of</span><span class="o">=</span>bb292337.tort
 </span></span></code></pre></div><hr>
 <blockquote>
-<p>cc876a3b.tort</p></blockquote>
+<p>cc876a3b.tort</p>
+</blockquote>
 <div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">dd <span class="k">if</span><span class="o">=</span>ReAL_File_System.001 <span class="nv">skip</span><span class="o">=</span><span class="k">$((</span><span class="o">(</span><span class="m">0</span>x1000 <span class="o">*</span> <span class="m">72705</span><span class="k">))</span><span class="o">)</span> <span class="nv">count</span><span class="o">=</span><span class="k">$((</span><span class="m">0</span>x175f<span class="k">))</span>  <span class="nv">bs</span><span class="o">=</span><span class="m">1</span> <span class="nv">of</span><span class="o">=</span>cc876a3b.tort
 </span></span></code></pre></div><p>We can write a script to remove the extra bytes from the extracted files.</p>
 <div class="highlight"><pre tabindex="0" class="chroma"><code class="language-py" data-lang="py"><span class="line"><span class="cl"><span class="kn">import</span> <span class="nn">struct</span>
@@ -1062,7 +815,7 @@ Green Bounded Area -&gt; <code>ReFS Log Header</code></p></blockquote>
 </span></span><span class="line"><span class="cl">        <span class="n">key2</span> <span class="o">=</span> <span class="n">hashlib</span><span class="o">.</span><span class="n">md5</span><span class="p">(</span><span class="n">key1</span><span class="p">)</span><span class="o">.</span><span class="n">hexdigest</span><span class="p">()</span><span class="o">.</span><span class="n">encode</span><span class="p">()</span>
 </span></span><span class="line"><span class="cl">        <span class="n">dec</span> <span class="o">=</span> <span class="n">w</span><span class="p">(</span><span class="n">encbuff</span><span class="o">=</span><span class="n">enc_buff</span><span class="p">,</span> <span class="n">key1</span><span class="o">=</span> <span class="n">key1</span><span class="p">,</span> <span class="n">key2</span><span class="o">=</span> <span class="n">key2</span><span class="p">)</span>
 </span></span><span class="line"><span class="cl">        <span class="nb">open</span><span class="p">(</span><span class="sa">f</span><span class="s2">&#34;decrypted/</span><span class="si">{</span><span class="n">dec_files</span><span class="p">[</span><span class="n">_</span><span class="p">]</span><span class="si">}</span><span class="s2">&#34;</span><span class="p">,</span> <span class="s1">&#39;wb&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">dec</span><span class="p">)</span>
-</span></span></code></pre></div><p><img alt="AltText" loading="lazy" src="/posts/resilient-file-system/images/image-37.png"></p>
+</span></span></code></pre></div><p><img src="/posts/resilient-file-system/images/image-37.png" alt="AltText"></p>
 <p>Let&rsquo;s calculate md5sum of each file</p>
 <div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">da8ed3e98eb5a2ba769ea60b48b0f6eb  15005-39026.pdf
 </span></span><span class="line"><span class="cl">d58621ce6e560ba1c045892aef0b5f8b  binary-01.gif
@@ -1072,7 +825,7 @@ Green Bounded Area -&gt; <code>ReFS Log Header</code></p></blockquote>
 </span></span><span class="line"><span class="cl">111fb8624db9365af79e6ec446b00eac  stuffs.rar
 </span></span><span class="line"><span class="cl">76675928a19bcc5602ef81c7a833d3fa  vl36hkjkzbh91.png
 </span></span><span class="line"><span class="cl">4d9c5a006c4315625c86d94a8fd9fd2e  ySq12b0T.mp4
-</span></span></code></pre></div><p><img alt="alt text" loading="lazy" src="/posts/resilient-file-system/images/image-506.png"></p>
+</span></span></code></pre></div><p><img src="/posts/resilient-file-system/images/image-506.png" alt="alt text"></p>
 <p><strong>Final Ans</strong></p>
 <div class="highlight"><pre tabindex="0" class="chroma"><code class="language-py" data-lang="py"><span class="line"><span class="cl"><span class="p">[</span>
 </span></span><span class="line"><span class="cl">  <span class="p">[</span><span class="s1">&#39;da8ed3e98eb5a2ba769ea60b48b0f6eb&#39;</span><span class="p">],</span>
@@ -1085,7 +838,7 @@ Green Bounded Area -&gt; <code>ReFS Log Header</code></p></blockquote>
 </span></span><span class="line"><span class="cl">  <span class="p">[</span><span class="s1">&#39;4d9c5a006c4315625c86d94a8fd9fd2e&#39;</span><span class="p">],</span>
 </span></span><span class="line"><span class="cl"><span class="p">]</span>
 </span></span></code></pre></div><p><strong>Flag</strong> : <code>bi0sctf{ReAL_1_w0nd3r_wHa7_t1m3_is_17_14dbc653fdb414c1d}</code></p>
-<h2 id="references">References<a hidden class="anchor" aria-hidden="true" href="#references">#</a></h2>
+<h2 id="references">References</h2>
 <ul>
 <li>
 <p><a href="https://www.sciencedirect.com/science/article/pii/S2666281723001191?ref=pdf_download&amp;fr=RR-2&amp;rr=857d87e5a8047866">Deletion Pattern in ReFS</a></p>
@@ -1105,219 +858,59 @@ Green Bounded Area -&gt; <code>ReFS Log Header</code></p></blockquote>
 </ul>
 <hr>
 <p><strong>Contact</strong>: <strong>Sabhya Raj Mehta(5h4rrK)</strong> | <a href="https://twitter.com/5h4rrK">Twitter</a> |  <a href="https://github.com/5h4rrK">GitHub</a> |   <a href="https://linkedin.com/in/sabhya05">LinkedIn</a></p>
-
-  </div>
-
-  <footer class="post-footer">
-    <ul class="post-tags">
-      <li><a href="http://localhost:1313/tags/bi0sctf2024/">Bi0sCTF2024</a></li>
-      <li><a href="http://localhost:1313/tags/resilient-file-system/">Resilient File System</a></li>
-      <li><a href="http://localhost:1313/tags/file-system-analysis/">File System Analysis</a></li>
-      <li><a href="http://localhost:1313/tags/log-analysis/">Log Analysis</a></li>
-      <li><a href="http://localhost:1313/tags/file-system-forensics/">File System Forensics</a></li>
-      <li><a href="http://localhost:1313/tags/refs/">ReFS</a></li>
-    </ul>
-<nav class="paginav">
-  <a class="prev" href="http://localhost:1313/posts/pe-parse-windbg/">
-    <span class="title">« Prev</span>
-    <br>
-    <span>PE Parsing: A Step-by-Step Guide with WinDbg - Part 1</span>
-  </a>
-  <a class="next" href="http://localhost:1313/posts/keyboard-pcap/">
-    <span class="title">Next »</span>
-    <br>
-    <span>Network-KeyLogger</span>
-  </a>
-</nav>
+    <h4><a href="http://localhost:1313/">Back to Home</a></h4>
+</div>
 
 
-<ul class="share-buttons">
-    <li>
-        <a target="_blank" rel="noopener noreferrer" aria-label="share ReAL-File-System-bi0sCTF2024 on x"
-            href="https://x.com/intent/tweet/?text=ReAL-File-System-bi0sCTF2024&amp;url=http%3a%2f%2flocalhost%3a1313%2fposts%2fresilient-file-system%2f&amp;hashtags=bi0sCTF2024%2cResilientFileSystem%2cFileSystemAnalysis%2cLogAnalysis%2cFileSystemForensics%2cReFS">
-            <svg version="1.1" viewBox="0 0 512 512" xml:space="preserve" height="30px" width="30px" fill="currentColor">
-                <path
-                    d="M512 62.554 L 512 449.446 C 512 483.97 483.97 512 449.446 512 L 62.554 512 C 28.03 512 0 483.97 0 449.446 L 0 62.554 C 0 28.03 28.029 0 62.554 0 L 449.446 0 C 483.971 0 512 28.03 512 62.554 Z M 269.951 190.75 L 182.567 75.216 L 56 75.216 L 207.216 272.95 L 63.9 436.783 L 125.266 436.783 L 235.9 310.383 L 332.567 436.783 L 456 436.783 L 298.367 228.367 L 432.367 75.216 L 371.033 75.216 Z M 127.633 110 L 164.101 110 L 383.481 400.065 L 349.5 400.065 Z" />
-            </svg>
-        </a>
-    </li>
-    <li>
-        <a target="_blank" rel="noopener noreferrer" aria-label="share ReAL-File-System-bi0sCTF2024 on linkedin"
-            href="https://www.linkedin.com/shareArticle?mini=true&amp;url=http%3a%2f%2flocalhost%3a1313%2fposts%2fresilient-file-system%2f&amp;title=ReAL-File-System-bi0sCTF2024&amp;summary=ReAL-File-System-bi0sCTF2024&amp;source=http%3a%2f%2flocalhost%3a1313%2fposts%2fresilient-file-system%2f">
-            <svg version="1.1" viewBox="0 0 512 512" xml:space="preserve" height="30px" width="30px" fill="currentColor">
-                <path
-                    d="M449.446,0c34.525,0 62.554,28.03 62.554,62.554l0,386.892c0,34.524 -28.03,62.554 -62.554,62.554l-386.892,0c-34.524,0 -62.554,-28.03 -62.554,-62.554l0,-386.892c0,-34.524 28.029,-62.554 62.554,-62.554l386.892,0Zm-288.985,423.278l0,-225.717l-75.04,0l0,225.717l75.04,0Zm270.539,0l0,-129.439c0,-69.333 -37.018,-101.586 -86.381,-101.586c-39.804,0 -57.634,21.891 -67.617,37.266l0,-31.958l-75.021,0c0.995,21.181 0,225.717 0,225.717l75.02,0l0,-126.056c0,-6.748 0.486,-13.492 2.474,-18.315c5.414,-13.475 17.767,-27.434 38.494,-27.434c27.135,0 38.007,20.707 38.007,51.037l0,120.768l75.024,0Zm-307.552,-334.556c-25.674,0 -42.448,16.879 -42.448,39.002c0,21.658 16.264,39.002 41.455,39.002l0.484,0c26.165,0 42.452,-17.344 42.452,-39.002c-0.485,-22.092 -16.241,-38.954 -41.943,-39.002Z" />
-            </svg>
-        </a>
-    </li>
-    <li>
-        <a target="_blank" rel="noopener noreferrer" aria-label="share ReAL-File-System-bi0sCTF2024 on reddit"
-            href="https://reddit.com/submit?url=http%3a%2f%2flocalhost%3a1313%2fposts%2fresilient-file-system%2f&title=ReAL-File-System-bi0sCTF2024">
-            <svg version="1.1" viewBox="0 0 512 512" xml:space="preserve" height="30px" width="30px" fill="currentColor">
-                <path
-                    d="M449.446,0c34.525,0 62.554,28.03 62.554,62.554l0,386.892c0,34.524 -28.03,62.554 -62.554,62.554l-386.892,0c-34.524,0 -62.554,-28.03 -62.554,-62.554l0,-386.892c0,-34.524 28.029,-62.554 62.554,-62.554l386.892,0Zm-3.446,265.638c0,-22.964 -18.616,-41.58 -41.58,-41.58c-11.211,0 -21.361,4.457 -28.841,11.666c-28.424,-20.508 -67.586,-33.757 -111.204,-35.278l18.941,-89.121l61.884,13.157c0.756,15.734 13.642,28.29 29.56,28.29c16.407,0 29.706,-13.299 29.706,-29.701c0,-16.403 -13.299,-29.702 -29.706,-29.702c-11.666,0 -21.657,6.792 -26.515,16.578l-69.105,-14.69c-1.922,-0.418 -3.939,-0.042 -5.585,1.036c-1.658,1.073 -2.811,2.761 -3.224,4.686l-21.152,99.438c-44.258,1.228 -84.046,14.494 -112.837,35.232c-7.468,-7.164 -17.589,-11.591 -28.757,-11.591c-22.965,0 -41.585,18.616 -41.585,41.58c0,16.896 10.095,31.41 24.568,37.918c-0.639,4.135 -0.99,8.328 -0.99,12.576c0,63.977 74.469,115.836 166.33,115.836c91.861,0 166.334,-51.859 166.334,-115.836c0,-4.218 -0.347,-8.387 -0.977,-12.493c14.564,-6.47 24.735,-21.034 24.735,-38.001Zm-119.474,108.193c-20.27,20.241 -59.115,21.816 -70.534,21.816c-11.428,0 -50.277,-1.575 -70.522,-21.82c-3.007,-3.008 -3.007,-7.882 0,-10.889c3.003,-2.999 7.882,-3.003 10.885,0c12.777,12.781 40.11,17.317 59.637,17.317c19.522,0 46.86,-4.536 59.657,-17.321c3.016,-2.999 7.886,-2.995 10.885,0.008c3.008,3.011 3.003,7.882 -0.008,10.889Zm-5.23,-48.781c-16.373,0 -29.701,-13.324 -29.701,-29.698c0,-16.381 13.328,-29.714 29.701,-29.714c16.378,0 29.706,13.333 29.706,29.714c0,16.374 -13.328,29.698 -29.706,29.698Zm-160.386,-29.702c0,-16.381 13.328,-29.71 29.714,-29.71c16.369,0 29.689,13.329 29.689,29.71c0,16.373 -13.32,29.693 -29.689,29.693c-16.386,0 -29.714,-13.32 -29.714,-29.693Z" />
-            </svg>
-        </a>
-    </li>
-    <li>
-        <a target="_blank" rel="noopener noreferrer" aria-label="share ReAL-File-System-bi0sCTF2024 on facebook"
-            href="https://facebook.com/sharer/sharer.php?u=http%3a%2f%2flocalhost%3a1313%2fposts%2fresilient-file-system%2f">
-            <svg version="1.1" viewBox="0 0 512 512" xml:space="preserve" height="30px" width="30px" fill="currentColor">
-                <path
-                    d="M449.446,0c34.525,0 62.554,28.03 62.554,62.554l0,386.892c0,34.524 -28.03,62.554 -62.554,62.554l-106.468,0l0,-192.915l66.6,0l12.672,-82.621l-79.272,0l0,-53.617c0,-22.603 11.073,-44.636 46.58,-44.636l36.042,0l0,-70.34c0,0 -32.71,-5.582 -63.982,-5.582c-65.288,0 -107.96,39.569 -107.96,111.204l0,62.971l-72.573,0l0,82.621l72.573,0l0,192.915l-191.104,0c-34.524,0 -62.554,-28.03 -62.554,-62.554l0,-386.892c0,-34.524 28.029,-62.554 62.554,-62.554l386.892,0Z" />
-            </svg>
-        </a>
-    </li>
-    <li>
-        <a target="_blank" rel="noopener noreferrer" aria-label="share ReAL-File-System-bi0sCTF2024 on whatsapp"
-            href="https://api.whatsapp.com/send?text=ReAL-File-System-bi0sCTF2024%20-%20http%3a%2f%2flocalhost%3a1313%2fposts%2fresilient-file-system%2f">
-            <svg version="1.1" viewBox="0 0 512 512" xml:space="preserve" height="30px" width="30px" fill="currentColor">
-                <path
-                    d="M449.446,0c34.525,0 62.554,28.03 62.554,62.554l0,386.892c0,34.524 -28.03,62.554 -62.554,62.554l-386.892,0c-34.524,0 -62.554,-28.03 -62.554,-62.554l0,-386.892c0,-34.524 28.029,-62.554 62.554,-62.554l386.892,0Zm-58.673,127.703c-33.842,-33.881 -78.847,-52.548 -126.798,-52.568c-98.799,0 -179.21,80.405 -179.249,179.234c-0.013,31.593 8.241,62.428 23.927,89.612l-25.429,92.884l95.021,-24.925c26.181,14.28 55.659,21.807 85.658,21.816l0.074,0c98.789,0 179.206,-80.413 179.247,-179.243c0.018,-47.895 -18.61,-92.93 -52.451,-126.81Zm-126.797,275.782l-0.06,0c-26.734,-0.01 -52.954,-7.193 -75.828,-20.767l-5.441,-3.229l-56.386,14.792l15.05,-54.977l-3.542,-5.637c-14.913,-23.72 -22.791,-51.136 -22.779,-79.287c0.033,-82.142 66.867,-148.971 149.046,-148.971c39.793,0.014 77.199,15.531 105.329,43.692c28.128,28.16 43.609,65.592 43.594,105.4c-0.034,82.149 -66.866,148.983 -148.983,148.984Zm81.721,-111.581c-4.479,-2.242 -26.499,-13.075 -30.604,-14.571c-4.105,-1.495 -7.091,-2.241 -10.077,2.241c-2.986,4.483 -11.569,14.572 -14.182,17.562c-2.612,2.988 -5.225,3.364 -9.703,1.12c-4.479,-2.241 -18.91,-6.97 -36.017,-22.23c-13.314,-11.876 -22.304,-26.542 -24.916,-31.026c-2.612,-4.484 -0.279,-6.908 1.963,-9.14c2.016,-2.007 4.48,-5.232 6.719,-7.847c2.24,-2.615 2.986,-4.484 4.479,-7.472c1.493,-2.99 0.747,-5.604 -0.374,-7.846c-1.119,-2.241 -10.077,-24.288 -13.809,-33.256c-3.635,-8.733 -7.327,-7.55 -10.077,-7.688c-2.609,-0.13 -5.598,-0.158 -8.583,-0.158c-2.986,0 -7.839,1.121 -11.944,5.604c-4.105,4.484 -15.675,15.32 -15.675,37.364c0,22.046 16.048,43.342 18.287,46.332c2.24,2.99 31.582,48.227 76.511,67.627c10.685,4.615 19.028,7.371 25.533,9.434c10.728,3.41 20.492,2.929 28.209,1.775c8.605,-1.285 26.499,-10.833 30.231,-21.295c3.732,-10.464 3.732,-19.431 2.612,-21.298c-1.119,-1.869 -4.105,-2.99 -8.583,-5.232Z" />
-            </svg>
-        </a>
-    </li>
-    <li>
-        <a target="_blank" rel="noopener noreferrer" aria-label="share ReAL-File-System-bi0sCTF2024 on telegram"
-            href="https://telegram.me/share/url?text=ReAL-File-System-bi0sCTF2024&amp;url=http%3a%2f%2flocalhost%3a1313%2fposts%2fresilient-file-system%2f">
-            <svg version="1.1" xml:space="preserve" viewBox="2 2 28 28" height="30px" width="30px" fill="currentColor">
-                <path
-                    d="M26.49,29.86H5.5a3.37,3.37,0,0,1-2.47-1,3.35,3.35,0,0,1-1-2.47V5.48A3.36,3.36,0,0,1,3,3,3.37,3.37,0,0,1,5.5,2h21A3.38,3.38,0,0,1,29,3a3.36,3.36,0,0,1,1,2.46V26.37a3.35,3.35,0,0,1-1,2.47A3.38,3.38,0,0,1,26.49,29.86Zm-5.38-6.71a.79.79,0,0,0,.85-.66L24.73,9.24a.55.55,0,0,0-.18-.46.62.62,0,0,0-.41-.17q-.08,0-16.53,6.11a.59.59,0,0,0-.41.59.57.57,0,0,0,.43.52l4,1.24,1.61,4.83a.62.62,0,0,0,.63.43.56.56,0,0,0,.4-.17L16.54,20l4.09,3A.9.9,0,0,0,21.11,23.15ZM13.8,20.71l-1.21-4q8.72-5.55,8.78-5.55c.15,0,.23,0,.23.16a.18.18,0,0,1,0,.06s-2.51,2.3-7.52,6.8Z" />
-            </svg>
-        </a>
-    </li>
-    <li>
-        <a target="_blank" rel="noopener noreferrer" aria-label="share ReAL-File-System-bi0sCTF2024 on ycombinator"
-            href="https://news.ycombinator.com/submitlink?t=ReAL-File-System-bi0sCTF2024&u=http%3a%2f%2flocalhost%3a1313%2fposts%2fresilient-file-system%2f">
-            <svg version="1.1" xml:space="preserve" width="30px" height="30px" viewBox="0 0 512 512" fill="currentColor"
-                xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape">
-                <path
-                    d="M449.446 0C483.971 0 512 28.03 512 62.554L512 449.446C512 483.97 483.97 512 449.446 512L62.554 512C28.03 512 0 483.97 0 449.446L0 62.554C0 28.03 28.029 0 62.554 0L449.446 0ZM183.8767 87.9921H121.8427L230.6673 292.4508V424.0079H281.3328V292.4508L390.1575 87.9921H328.1233L256 238.2489z" />
-            </svg>
-        </a>
-    </li>
-</ul>
+        </div><footer class="container">
+    <hr class="soften">
+    <p>
+&copy; 
 
-  </footer>
-</article>
-    </main>
     
-<footer class="footer">
-        <span>&copy; 2025 <a href="http://localhost:1313/">shark.exe</a></span> · 
 
-    <span>
-        Powered by
-        <a href="https://gohugo.io/" rel="noopener noreferrer" target="_blank">Hugo</a> &
-        <a href="https://github.com/adityatelange/hugo-PaperMod/" rel="noopener" target="_blank">PaperMod</a>
-    </span>
+<span id="thisyear">2026</span>
+
+
+</p>
+    <p class="text-center">
+        
+        
+        
+        
+        
+    </p>
 </footer>
-<a href="#top" aria-label="go to top" title="Go to Top (Alt + G)" class="top-link" id="top-link" accesskey="g">
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 6" fill="currentColor">
-        <path d="M12 6H0l6-6z" />
-    </svg>
-</a>
 
+</body><link rel="stylesheet" href="/css/bootstrap.css">
+<link rel="stylesheet" href="/css/bootstrap-responsive.css">
+<link rel="stylesheet" href="/css/style.css">
+
+<script src="/js/jquery.js"></script>
+<script src="/js/bootstrap-386.js"></script>
+<script src="/js/bootstrap-transition.js"></script>
+<script src="/js/bootstrap-alert.js"></script>
+<script src="/js/bootstrap-modal.js"></script>
+<script src="/js/bootstrap-dropdown.js"></script>
+<script src="/js/bootstrap-scrollspy.js"></script>
+<script src="/js/bootstrap-tab.js"></script>
+<script src="/js/bootstrap-tooltip.js"></script>
+<script src="/js/bootstrap-popover.js"></script>
+<script src="/js/bootstrap-button.js"></script>
+<script src="/js/bootstrap-collapse.js"></script>
+<script src="/js/bootstrap-carousel.js"></script>
+<script src="/js/bootstrap-typeahead.js"></script>
+<script src="/js/bootstrap-affix.js"></script>
 <script>
-    let menu = document.getElementById('menu')
-    if (menu) {
-        menu.scrollLeft = localStorage.getItem("menu-scroll-position");
-        menu.onscroll = function () {
-            localStorage.setItem("menu-scroll-position", menu.scrollLeft);
-        }
-    }
-
-    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-        anchor.addEventListener("click", function (e) {
-            e.preventDefault();
-            var id = this.getAttribute("href").substr(1);
-            if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView({
-                    behavior: "smooth"
-                });
-            } else {
-                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView();
-            }
-            if (id === "top") {
-                history.replaceState(null, null, " ");
-            } else {
-                history.pushState(null, null, `#${id}`);
-            }
-        });
-    });
-
-</script>
-<script>
-    var mybutton = document.getElementById("top-link");
-    window.onscroll = function () {
-        if (document.body.scrollTop > 800 || document.documentElement.scrollTop > 800) {
-            mybutton.style.visibility = "visible";
-            mybutton.style.opacity = "1";
-        } else {
-            mybutton.style.visibility = "hidden";
-            mybutton.style.opacity = "0";
-        }
+    _386 = { 
+        fastLoad: null ,
+        onePass: null , 
+        speedFactor: 10 
     };
 
+    
+    function ThisYear() {
+        document.getElementById('thisyear').innerHTML = new Date().getFullYear();
+    };
 </script>
-<script>
-    document.getElementById("theme-toggle").addEventListener("click", () => {
-        if (document.body.className.includes("dark")) {
-            document.body.classList.remove('dark');
-            localStorage.setItem("pref-theme", 'light');
-        } else {
-            document.body.classList.add('dark');
-            localStorage.setItem("pref-theme", 'dark');
-        }
-    })
-
-</script>
-<script>
-    document.querySelectorAll('pre > code').forEach((codeblock) => {
-        const container = codeblock.parentNode.parentNode;
-
-        const copybutton = document.createElement('button');
-        copybutton.classList.add('copy-code');
-        copybutton.innerHTML = 'copy';
-
-        function copyingDone() {
-            copybutton.innerHTML = 'copied!';
-            setTimeout(() => {
-                copybutton.innerHTML = 'copy';
-            }, 2000);
-        }
-
-        copybutton.addEventListener('click', (cb) => {
-            if ('clipboard' in navigator) {
-                navigator.clipboard.writeText(codeblock.textContent);
-                copyingDone();
-                return;
-            }
-
-            const range = document.createRange();
-            range.selectNodeContents(codeblock);
-            const selection = window.getSelection();
-            selection.removeAllRanges();
-            selection.addRange(range);
-            try {
-                document.execCommand('copy');
-                copyingDone();
-            } catch (e) { };
-            selection.removeRange(range);
-        });
-
-        if (container.classList.contains("highlight")) {
-            container.appendChild(copybutton);
-        } else if (container.parentNode.firstChild == container) {
-            
-        } else if (codeblock.parentNode.parentNode.parentNode.parentNode.parentNode.nodeName == "TABLE") {
-            
-            codeblock.parentNode.parentNode.parentNode.parentNode.parentNode.appendChild(copybutton);
-        } else {
-            
-            codeblock.parentNode.appendChild(copybutton);
-        }
-    });
-</script>
-</body>
-
 </html>

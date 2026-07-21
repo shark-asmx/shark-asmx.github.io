@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes"?>
-<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/">
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
-    <title>Digital Forensics on shark.exe</title>
+    <title>Digital Forensics on shark-asmx</title>
     <link>http://localhost:1313/tags/digital-forensics/</link>
-    <description>Recent content in Digital Forensics on shark.exe</description>
-    <generator>Hugo -- 0.147.8</generator>
+    <description>Recent content in Digital Forensics on shark-asmx</description>
+    <generator>Hugo</generator>
     <language>en</language>
     <lastBuildDate>Thu, 12 Jun 2025 09:54:09 +0530</lastBuildDate>
     <atom:link href="http://localhost:1313/tags/digital-forensics/index.xml" rel="self" type="application/rss+xml" />
@@ -13,7 +13,7 @@
       <link>http://localhost:1313/posts/prefetch/prefetch/</link>
       <pubDate>Thu, 12 Jun 2025 09:54:09 +0530</pubDate>
       <guid>http://localhost:1313/posts/prefetch/prefetch/</guid>
-      <description>An analysis of Windows Prefetch files, their structure, forensic significance, and decompression process.</description>
+      <description>&lt;h1 id=&#34;prefetch-files&#34;&gt;Prefetch Files&lt;/h1&gt;&#xA;&lt;p&gt;Prefetch files are created by Windows to speed up the loading process by caching the neccessary data. When we fire up a process, it will cache the details like files accessed and stores it in small file i.e. prefetch files under &lt;code&gt;Prefetch&lt;/code&gt; subfolder in &lt;code&gt;Windows&lt;/code&gt;. When the application is opened for the next time, it will load the files accessed. Windows Prefetch files are located in &lt;code&gt;C:\Windows\Prefetch\*.pf&lt;/code&gt;. From forensic perspective, it provides various valuable information like&lt;/p&gt;</description>
     </item>
     <item>
       <title>Kernel Memory Dump Analysis : Introduction</title>
