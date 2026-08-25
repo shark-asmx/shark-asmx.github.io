@@ -131,7 +131,7 @@ While execution, it reads the value from this tag `InvocationParam_ScriptBlock`.
 
 Triggering this task
 
-![Img1](images/img1.png)
+![Img1](/posts/windows-scheduled-job/img1.png)
 
 Check `Powershell` Operational logs (event ids: 403, 600), if something has been invoked during that timeframe.
 
@@ -281,7 +281,7 @@ import getpass
 
 Here we go
 
-![Img2](images/img2.png)
+![Img2](/posts/windows-scheduled-job/img2.png)
 
 ### Interesting Findings
 
@@ -361,7 +361,7 @@ This one seems to be more interesting than the previous scenario. The objective 
  j.start_job() # deletes the job
 ```
 
-![Img3](images/img3.png)
+![Img3](/posts/windows-scheduled-job/img3.png)
 
 These are just few cases; however, many more different cases can be explored with it.
 
